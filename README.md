@@ -8,7 +8,7 @@ Paths containing `/_` (an underscore starting any path segment) are ignored.
 # Works with any nix module class: `nixos`, `nix-darwin`, `home-manager`, `flake-parts`, etc.
 
 ```nix
-{lib, ...}: {
+{config, ...} {
   imports = [  (import-tree ./modules)  ];
 }
 ```
@@ -24,6 +24,30 @@ Paths containing `/_` (an underscore starting any path segment) are ignored.
 }
 ```
 
+## Function usage.
+
+###### `import-tree`
+This function expects a directory path as first argument or a list of directory paths.
+
+```nix
+# import-tree path_or_list_of_paths
+import-tree ./someDir
+
+import-tree [./oneDir otherDir]
+```
+
+The resulting value will be a module `{ imports = [...]; }`.
+
+###### `import-tree.matching`
+
+Same as `import-tree` function but this one takes a filtering function as first argument. This filter function should return true for any path that should be included in imports;
+
+```
+# import-tree.matching predicate path_or_list_of_paths
+
+import-tree.matching (path: lib.hasSuffix "/options.nix") ./someDir
+```
+
 
 #### Why
 
@@ -34,13 +58,15 @@ Importing a tree of nix modules has some advantages:
 - people could share sub-trees of modules as different sets of functionality. for example, different layers in a neovim distribution.
 
 ```nix
-# flake.nix (my-neovim-distro)
+# flake.nix (neovim-configs-distro)
 {
   outputs = _: {
     flakeModules = {
-      options = {self, ...}: self.inputs.import-tree ./flakeModules/options;
-      minimal = {self, ...}: self.inputs.import-tree [./flakeModules/options ./flakeModules/minimal];
-      maximal = {self, ...}: self.inputs.import-tree ./flakeModules;
+      options = {inputs, ...}: inputs.import-tree ./flakeModules/options;
+      minimal = {inputs, ...}: inputs.import-tree [./flakeModules/options ./flakeModules/minimal];
+      maximal = {inputs, ...}: inputs.import-tree ./flakeModules;
+
+      byFeature = featureName: {inputs, lib, ...}: inputs.import-tree.matching (lib.hasSuffix "${featureName}.nix") ./flakeModules;
     };
   };
 }
