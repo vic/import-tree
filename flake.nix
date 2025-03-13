@@ -1,5 +1,5 @@
 {
-  outputs = _: { 
-    __functor: _: import ./default.nix; 
-  }
+  outputs = _: {
+    __functor = _: import ./default.nix;
+  };
 }
