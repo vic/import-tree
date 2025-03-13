@@ -31,6 +31,20 @@ Importing a tree of nix modules has some advantages:
 
 - files (.nix modules) can be moved freely inside the tree. no fixed directory structure.
 - since modules have options, you can use `enable` options to skip functionality even if all files are imported.
+- people could share sub-trees of modules as different sets of functionality. for example, different layers in a neovim distribution.
+
+```nix
+# flake.nix (my-neovim-distro)
+{
+  outputs = _: {
+    flakeModules = {
+      options = {self, ...}: self.inputs.import-tree ./flakeModules/options;
+      minimal = {self, ...}: self.inputs.import-tree [./flakeModules/options ./flakeModules/minimal];
+      maximal = {self, ...}: self.inputs.import-tree ./flakeModules;
+    };
+  };
+}
+```
 
 #### Original inspiration
 
