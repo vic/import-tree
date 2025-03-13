@@ -7,8 +7,8 @@ let
     lib: root:
     let
       # using toString prevents the path from being copied to the store (and exist)
-      hasSuffix = a: b: lib.hasSuffix a (lib.toString b);
-      hasInfix = a: b: lib.hasInfix a (lib.toString b);
+      hasSuffix = a: b: lib.hasSuffix a (builtins.toString b);
+      hasInfix = a: b: lib.hasInfix a (builtins.toString b);
       notHasInfix = a: b: !hasInfix a b;
     in
     lib.pipe root [
