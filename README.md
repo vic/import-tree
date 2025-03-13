@@ -42,12 +42,25 @@ The resulting value will be a module `{ imports = [...]; }`.
 
 Same as `import-tree` function but this one takes a filtering function as first argument. This filter function should return true for any path that should be included in imports;
 
-```
+```nix
 # import-tree.matching predicate path_or_list_of_paths
 
 import-tree.matching (path: lib.hasSuffix "/options.nix") ./someDir
 ```
 
+###### `import-tree.leafs` and `(import-tree.matching pred).leafs`
+
+These functions return the list of files instead of creating a nix module. This can be handy when you just need to map over the files to produce another thing, like an attribute set of packages from those files.
+
+The first parameter to `leafs` is a `lib` attrset (ie. `pkgs.lib`), the second parameter is the tree root.
+
+```nix
+# leafs lib path_or_list_of_paths
+files = import-tree.leafs pkgs.lib ./someDir;
+
+# our function returning a module is actually implemented like this:
+module = path: { lib, ... }: { imports = leafs lib path; };
+```
 
 #### Why
 
