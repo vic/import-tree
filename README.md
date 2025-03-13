@@ -53,12 +53,19 @@ import-tree.matching (path: lib.hasSuffix "/options.nix") ./someDir
 
 Importing a tree of nix modules has some advantages:
 
+##### [Pattern: each file is a flake-parts module](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271)
+
+This pattern was the original inspiration for publishing this library. I recomend you to read how configs are structured at [Every Nix file is a flake-parts module](https://github.com/mightyiam/infra?tab=readme-ov-file#every-nix-file-is-a-flake-parts-module) ([discourse thread](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271))
+
 - files (.nix modules) can be moved freely inside the tree. no fixed directory structure.
 - since modules have options, you can use `enable` options to skip functionality even if all files are imported.
-- people could share sub-trees of modules as different sets of functionality. for example, different layers in a neovim distribution.
+
+##### Sharing subtrees of modules as flake parts.
+
+People could share sub-trees of modules as different sets of functionality. for example, by-feature layers in a neovim distribution.
 
 ```nix
-# flake.nix (neovim-configs-distro)
+# flake.nix (layered configs-distro)
 {
   outputs = _: {
     flakeModules = {
@@ -72,6 +79,10 @@ Importing a tree of nix modules has some advantages:
 }
 ```
 
-#### Original inspiration
+Note that in the previous example, the flake does not requires inputs. That's not actually a requirement of this library, the flake *could* define its own inputs just as any other flake does. However, this example can help illustrate another pattern:
 
-[Every Nix file is a flake-parts module](https://github.com/mightyiam/infra?tab=readme-ov-file#every-nix-file-is-a-flake-parts-module) ([discourse thread](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271))
+##### Flakes with no inputs exposing just flakeModules.
+
+This pattern (as illustrated by the flake code above) declares no inputs. Yet the exposed flakeModules have access to the final user's flake inputs.
+
+This bypasses the `flake.lock` advantages - `nix flake lock` wont even generate a file-, and since the code has no guarantee on which version of the dependency inputs it will run using library code will probably break. So, clearly this pattern is not for every situation, but most likely for sharing modules. However, one advantage of this is that the dependency tree would be flat, having the final user's flake absolute control on what inputs are used, without having to worry if some third-party forgot to use `foo.inputs.nixpkgs.follows = "nixpkgs";` on any flake we are trying to re-use.

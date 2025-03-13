@@ -9,6 +9,7 @@ path: {
         {
           imports = lib.pipe path [
             (lib.toList)
+            (lib.lists.flatten)
             (lib.map lib.filesystem.listFilesRecursive)
             (lib.lists.flatten)
             (lib.filter (lib.hasSuffix ".nix"))
