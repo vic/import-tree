@@ -80,6 +80,8 @@ let
           pipeTo = pipef: self (c: (f c) // { inherit pipef; });
 
           leafs = self (c: (f c) // { pipef = (i: i); });
+
+          flakeModules.nix-unit = ./checks;
         };
       };
     in
