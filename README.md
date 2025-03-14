@@ -4,7 +4,6 @@ An small function producing a nix module that imports all `.nix` files in a tree
 
 Paths containing `/_` (an underscore starting any path segment) are ignored.
 
-
 # Works with any nix module class: `nixos`, `nix-darwin`, `home-manager`, `flake-parts`, etc.
 
 ```nix
@@ -26,50 +25,108 @@ Paths containing `/_` (an underscore starting any path segment) are ignored.
 
 ## Function usage.
 
-###### `import-tree`
-This function expects a directory path as first argument or a list of directory paths.
+### `import-tree`
+
+This is the protagonist function of this library. It expects to be called with a directory path as first argument or a list of directory paths.
 
 ```nix
 # import-tree path_or_list_of_paths
 import-tree ./someDir
 
-import-tree [./oneDir otherDir]
+import-tree [./oneDir [nestedListOfDirs]]
 ```
 
-The resulting value will be a module `{ imports = [...]; }`.
+The resulting value will be a module `{ imports = [...]; }` containing nix files found on dir.
 
-###### `import-tree.matching`
+> That's all you need in most use cases. Just give the result of `import-tree` to any module evaluation of yours.
 
-Same as `import-tree` function but this one takes a regular expression as first argument. The regex should match the full path for it being selected. Match is done with `lib.strings.match`;
+### Advanced `import-tree.*` config functions. (for libraries using import-tree)
+
+`import-tree` also contains config functions (*see their documentation bellow*) you can use before calling with a directory tree.
+
+Invoking one of these config functions will return a new `import-tree` functor,
+and invoking another config function on it will return yet another functor. This is somewhat similar to the builder pattern in other languages. When you have configured `import-tree` as you want, you can
+call it passing a path as in the heading example.
+
+The following code configures using `.withLib`, `.filtered`, `.leafs` before calling `import-tree` with a path:
 
 ```nix
-# import-tree.matching regex path_or_list_of_paths
+# not as pretty to read
+(((import-tree.withLib lib).filtered (lib.hasSuffix "a.nix"))).leafs ./someDir;
+> [ ... ]
 
-import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./someDir
+# piping might be much better
+lib.pipe import-tree [
+  (f: f.leafs) # dont produce modules, just return the list of results
+  (f: f.mapWith import) # instead of returning files, import each of them
+  (f: f.withLib lib) # specify a pkgs.lib, since this flake has no dependencies
+  (f: f.filtered (lib.hasSuffix "a.nix")) # filter nix files by some predicate
+  (f: f ./someDir) # finally call the configured functor with a path
+]
+> [ ... ]
+```
+
+###### `import-tree.withLib`
+
+Calling `.withLib` is *only needed* if you will invoke `.leafs` or `.pipeTo` instead of using `import-tree` to produce nix config modules.
+
+> The reason is that when working _inside_ of a nix modules evaluation, each module has access to `{lib, ...}` and `import-tree` will automatically use that `lib`. However, outside of a nix modules evaluation you need to specify which lib to use since this flake prefers not to depend on `nixpkgs` nor `nixpkgs-lib` flakes.
+
+```nix
+# import-tree.withLib : lib -> import-tree
+
+import-tree.withLib pkgs.lib
 ```
 
 ###### `import-tree.filtered`
 
-Same as `import-tree` function but this one takes a filtering function `path -> bool` as first argument. This filter function should return true for any path that should be included in imports;
+`filtered` takes a predicate function `path -> bool` as first argument. Predicate should return true for any nix file to be included.
 
 ```nix
-# import-tree.filtered predicate path_or_list_of_paths
+# import-tree.filtered : (path -> bool) -> import-tree
 
 import-tree.filtered (lib.hasSuffix "/options.nix") ./someDir
 ```
 
-###### `import-tree.leafs` and `(import-tree.matching pred).leafs`
+###### `import-tree.matching`
 
-These functions return the list of files instead of creating a nix module. This can be handy when you just need to map over the files to produce another thing, like an attribute set of packages from those files.
-
-The first parameter to `leafs` is a `lib` attrset (ie. `pkgs.lib`), the second parameter is the tree root.
+`matching` takes a regular expression as first argument. The regex should match the full path for the path to be selected. Match is done with `lib.strings.match`;
 
 ```nix
-# leafs lib path_or_list_of_paths
-files = import-tree.leafs pkgs.lib ./someDir;
+# import-tree.matching : regex -> import-tree
 
-# our function returning a module is actually implemented like this:
-module = path: { lib, ... }: { imports = leafs lib path; };
+import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./someDir
+```
+
+###### `import-tree.mapWith`
+
+`mapWith` takes a transformation function that you can use to map each selected path into something else.
+You can use it to take the file path and create a custom nix module from it as you see fit.
+
+```nix
+# import-tree.mapWith : (path -> any) -> import-tree
+
+import-tree.mapWith (import)
+```
+
+###### `import-tree.pipeTo`
+
+`pipeTo` takes a function that will recieve the list of paths. When configured with this, `import-tree` will not return a nix module but the result of the function being piped to.
+
+```nix
+# import-tree.pipeTo : ([paths] -> any) -> import-tree
+
+import-tree.pipeTo (identity) # the same as .leafs
+```
+
+###### `import-tree.leafs`
+
+`leafs` takes no arguments, it is equivalent to calling `pipeTo identity`, that is, instead of producing a nix module, just return the list of results.
+
+```nix
+# import-tree.leafs : import-tree
+
+import-tree.leafs
 ```
 
 #### Why
@@ -109,3 +166,11 @@ Note that in the previous example, the flake does not requires inputs. That's no
 This pattern (as illustrated by the flake code above) declares no inputs. Yet the exposed flakeModules have access to the final user's flake inputs.
 
 This bypasses the `flake.lock` advantages - `nix flake lock` wont even generate a file-, and since the code has no guarantee on which version of the dependency inputs it will run using library code will probably break. So, clearly this pattern is not for every situation, but most likely for sharing modules. However, one advantage of this is that the dependency tree would be flat, having the final user's flake absolute control on what inputs are used, without having to worry if some third-party forgot to use `foo.inputs.nixpkgs.follows = "nixpkgs";` on any flake we are trying to re-use.
+
+#### Running tests
+
+```shell
+(cd checks; nix flake update import-tree)
+nix flake check path:checks # run all tests
+nix flake run path:checks#treefmt # format all code before pushing
+```
