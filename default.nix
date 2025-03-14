@@ -6,18 +6,16 @@ let
   leafs =
     lib: root:
     let
-      # using toString prevents the path from being copied to the store (and exist)
-      hasSuffix = a: b: lib.hasSuffix a (builtins.toString b);
-      hasInfix = a: b: lib.hasInfix a (builtins.toString b);
-      notHasInfix = a: b: !hasInfix a b;
+      notHasInfix = a: b: !lib.hasInfix a b;
+      stringFilter = f: path: f (builtins.toString path);
     in
     lib.pipe root [
       (lib.toList)
       (lib.lists.flatten)
       (lib.map lib.filesystem.listFilesRecursive)
       (lib.lists.flatten)
-      (lib.filter (hasSuffix ".nix"))
-      (lib.filter (if filter == null then (notHasInfix "/_") else filter))
+      (lib.filter (stringFilter (lib.hasSuffix ".nix")))
+      (lib.filter (stringFilter (if filter == null then (notHasInfix "/_") else filter)))
     ];
 
   # module exists so we delay access to lib til we are part of the module system.
