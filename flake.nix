@@ -1,6 +1,7 @@
 {
   outputs = _: {
     __functor = _: import ./default.nix { };
-    matching = filter: import ./default.nix { inherit filter; };
+    filtered = filter: import ./default.nix { inherit filter; };
+    matching = regex: import ./default.nix { inherit regex; };
   };
 }

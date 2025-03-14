@@ -1,21 +1,36 @@
 {
   filter ? null,
+  regex ? null,
 }:
 let
 
   leafs =
     lib: root:
     let
-      notHasInfix = a: b: !lib.hasInfix a b;
+      isNixFile = lib.hasSuffix ".nix";
+      notIgnored = p: !lib.hasInfix "/_";
+      matchesRegex = a: b: (lib.strings.match a b) != null;
+
       stringFilter = f: path: f (builtins.toString path);
+      filterWithS = f: lib.filter (stringFilter f);
+
+      userFilter =
+        if filter != null then
+          filter
+        else if regex != null then
+          matchesRegex regex
+        else
+          (_: true);
+
     in
     lib.pipe root [
       (lib.toList)
       (lib.lists.flatten)
       (lib.map lib.filesystem.listFilesRecursive)
       (lib.lists.flatten)
-      (lib.filter (stringFilter (lib.hasSuffix ".nix")))
-      (lib.filter (stringFilter (if filter == null then (notHasInfix "/_") else filter)))
+      (filterWithS isNixFile)
+      (filterWithS notIgnored)
+      (filterWithS userFilter)
     ];
 
   # module exists so we delay access to lib til we are part of the module system.

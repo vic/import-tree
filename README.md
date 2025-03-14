@@ -40,12 +40,22 @@ The resulting value will be a module `{ imports = [...]; }`.
 
 ###### `import-tree.matching`
 
-Same as `import-tree` function but this one takes a filtering function as first argument. This filter function should return true for any path that should be included in imports;
+Same as `import-tree` function but this one takes a regular expression as first argument. The regex should match the full path for it being selected. Match is done with `lib.strings.match`;
 
 ```nix
-# import-tree.matching predicate path_or_list_of_paths
+# import-tree.matching regex path_or_list_of_paths
 
-import-tree.matching (path: lib.hasSuffix "/options.nix") ./someDir
+import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./someDir
+```
+
+###### `import-tree.filtered`
+
+Same as `import-tree` function but this one takes a filtering function `path -> bool` as first argument. This filter function should return true for any path that should be included in imports;
+
+```nix
+# import-tree.filtered predicate path_or_list_of_paths
+
+import-tree.filtered (path: lib.hasSuffix "/options.nix") ./someDir
 ```
 
 ###### `import-tree.leafs` and `(import-tree.matching pred).leafs`
@@ -86,7 +96,7 @@ People could share sub-trees of modules as different sets of functionality. for 
       minimal = {inputs, ...}: inputs.import-tree [./flakeModules/options ./flakeModules/minimal];
       maximal = {inputs, ...}: inputs.import-tree ./flakeModules;
 
-      byFeature = featureName: {inputs, lib, ...}: inputs.import-tree.matching (lib.hasSuffix "${featureName}.nix") ./flakeModules;
+      byFeature = featureName: {inputs, lib, ...}: inputs.import-tree.filtered (lib.hasSuffix "${featureName}.nix") ./flakeModules;
     };
   };
 }
