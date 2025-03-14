@@ -8,7 +8,7 @@ let
     lib: root:
     let
       isNixFile = lib.hasSuffix ".nix";
-      notIgnored = p: !lib.hasInfix "/_";
+      notIgnored = p: !lib.hasInfix "/_" p;
       matchesRegex = a: b: (lib.strings.match a b) != null;
 
       stringFilter = f: path: f (builtins.toString path);
