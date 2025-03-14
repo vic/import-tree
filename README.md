@@ -55,7 +55,7 @@ Same as `import-tree` function but this one takes a filtering function `path -> 
 ```nix
 # import-tree.filtered predicate path_or_list_of_paths
 
-import-tree.filtered (path: lib.hasSuffix "/options.nix") ./someDir
+import-tree.filtered (lib.hasSuffix "/options.nix") ./someDir
 ```
 
 ###### `import-tree.leafs` and `(import-tree.matching pred).leafs`
