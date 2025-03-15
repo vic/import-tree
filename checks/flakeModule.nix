@@ -1,7 +1,7 @@
 { inputs, lib, ... }:
 let
   # target is ourself since we are being tested via github:vic/checkmate.
-  it = inputs.target.inputs.import-tree;
+  it = inputs.target;
   lit = it.withLib lib;
 in
 {
@@ -10,7 +10,7 @@ in
     {
       nix-unit.tests = {
         leafs."test fails if no lib has been set" = {
-          expr = it.leafs ./tree;
+          expr = it.leafs ./trees;
           expectedError.type = "ThrownError";
         };
 
@@ -53,12 +53,12 @@ in
 
         mapWith."test transforms each matching file with function" = {
           expr = (lit.mapWith import).leafs ./tree/x;
-          expected = [ "z" ];
+          expected = [ "m" ];
         };
 
         pipeTo."test pipes list into a function" = {
           expr = (lit.mapWith lib.pathType).pipeTo (lib.length) ./tree/x;
-          expected = 1;
+          expected = 2;
         };
 
         import-tree."test returns a module with a single imported nested module having leafs" = {

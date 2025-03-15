@@ -170,7 +170,5 @@ This bypasses the `flake.lock` advantages - `nix flake lock` wont even generate 
 #### Running tests
 
 ```shell
-(cd checks; nix flake update import-tree)
-nix flake check path:checks # run all tests
-nix flake run path:checks#treefmt # format all code before pushing
+nix flake check github:vic/checkmate --override-input target path:$PWD
 ```
