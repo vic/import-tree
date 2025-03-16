@@ -1,7 +1,6 @@
 { inputs, lib, ... }:
 let
-  inherit (inputs.target.inputs) import-tree;
-  it = import-tree;
+  it = inputs.target; # since we are tested by github:vic/checkmate
   lit = it.withLib lib;
 in
 {
