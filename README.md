@@ -166,4 +166,3 @@ Note that in the previous example, the flake does not requires inputs. That's no
 This pattern (as illustrated by the flake code above) declares no inputs. Yet the exposed flakeModules have access to the final user's flake inputs.
 
 This bypasses the `flake.lock` advantages - `nix flake lock` wont even generate a file-, and since the code has no guarantee on which version of the dependency inputs it will run using library code will probably break. So, clearly this pattern is not for every situation, but most likely for sharing modules. However, one advantage of this is that the dependency tree would be flat, having the final user's flake absolute control on what inputs are used, without having to worry if some third-party forgot to use `foo.inputs.nixpkgs.follows = "nixpkgs";` on any flake we are trying to re-use.
-

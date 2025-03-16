@@ -1,17 +1,16 @@
+# If formatting fails, run
+#   nix run github:vic/checkmate#checkmate-treefmt
+#
 { inputs, lib, ... }:
 let
-  it = inputs.target; # since we are tested by github:vic/checkmate
+  # since we are tested by github:vic/checkmate
+  it = inputs.target;
   lit = it.withLib lib;
 in
 {
   perSystem = (
-    { self', ... }:
+    { ... }:
     {
-      # check import-tree source to be formatted
-      # if anything fails you can fmt it with:
-      # nix run github:vic/checkmate#checkmate-treefmt
-      checks.treefmt = self'.lib.checkmate-treefmt import-tree;
-
       nix-unit.tests = {
         leafs."test fails if no lib has been set" = {
           expr = it.leafs ./trees;
