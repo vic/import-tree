@@ -1,16 +1,7 @@
 {
-  inputs.target.url = "github:vic/import-tree?dir=checks";
-  inputs.checkmate.url = "github:vic/checkmate";
-  inputs.checkmate.inputs.target.follows = "target";
+  inputs.import-tree.url = "github:vic/import-tree";
 
-  outputs = inputs: {
+  outputs = _: {
     flakeModules.nix-unit = ./flakeModule.nix;
   };
-
-  #outputs =
-  #  inputs:
-  #  inputs.checkmate.outputs
-  #  // {
-  #    flakeModules.nix-unit = ./flakeModule.nix;
-  #  };
 }

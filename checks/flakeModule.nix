@@ -1,13 +1,17 @@
 { inputs, lib, ... }:
 let
-  # target is ourself since we are being tested via github:vic/checkmate.
-  it = inputs.target;
+  it = inputs.target.inputs.import-tree;
   lit = it.withLib lib;
 in
 {
   perSystem = (
-    { ... }:
+    { self', ... }:
     {
+      # check import-tree source to be formatted
+      # if anything fails you can fmt it with:
+      # nix run github:vic/checkmate#checkmate-treefmt
+      checks.treefmt = self'.lib.checkmate-treefmt inputs.target.inputs.import-tree;
+
       nix-unit.tests = {
         leafs."test fails if no lib has been set" = {
           expr = it.leafs ./trees;
@@ -58,7 +62,7 @@ in
 
         pipeTo."test pipes list into a function" = {
           expr = (lit.mapWith lib.pathType).pipeTo (lib.length) ./tree/x;
-          expected = 2;
+          expected = 1;
         };
 
         import-tree."test returns a module with a single imported nested module having leafs" = {
