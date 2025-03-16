@@ -170,5 +170,5 @@ This bypasses the `flake.lock` advantages - `nix flake lock` wont even generate 
 #### Running tests
 
 ```shell
-nix flake check github:vic/checkmate --override-input target path:$PWD
+nix flake check github:vic/checkmate --override-input target path:$PWD/checks -L --refresh
 ```

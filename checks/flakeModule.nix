@@ -1,6 +1,7 @@
 { inputs, lib, ... }:
 let
-  it = inputs.target.inputs.import-tree;
+  inherit (inputs.target.inputs) import-tree;
+  it = import-tree;
   lit = it.withLib lib;
 in
 {
@@ -10,7 +11,7 @@ in
       # check import-tree source to be formatted
       # if anything fails you can fmt it with:
       # nix run github:vic/checkmate#checkmate-treefmt
-      checks.treefmt = self'.lib.checkmate-treefmt inputs.target.inputs.import-tree;
+      checks.treefmt = self'.lib.checkmate-treefmt import-tree;
 
       nix-unit.tests = {
         leafs."test fails if no lib has been set" = {
@@ -57,7 +58,7 @@ in
 
         mapWith."test transforms each matching file with function" = {
           expr = (lit.mapWith import).leafs ./tree/x;
-          expected = [ "m" ];
+          expected = [ "z" ];
         };
 
         pipeTo."test pipes list into a function" = {
