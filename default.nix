@@ -68,7 +68,7 @@ let
         __functor = self: f: {
           config = (f self);
           __functor = functor;
-          flakeModule.nix-unit = ./checks/flakeModule.nix;
+          flakeModules.nix-unit = ./checks/flakeModule.nix;
 
           withLib = lib: self (c: (f c) // { inherit lib; });
 
