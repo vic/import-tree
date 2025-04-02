@@ -1,3 +1,3 @@
 {
-  outputs = _: import ./default.nix;
+  outputs = _: import ./.;
 }
