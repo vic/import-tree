@@ -100,7 +100,7 @@ Here is a less readable equivalent:
 
 ### `import-tree.withLib`
 
-> [!NOTE]
+> \[!NOTE\]
 > `withLib` is required prior to invocation of any of `.leafs` or `.pipeTo`.
 > Because with the use of those functions the implementation does not have access to a `lib` that is provided as a module argument.
 
@@ -114,9 +114,8 @@ import-tree.withLib pkgs.lib
 
 `filtered` takes a predicate function `path -> bool`. `true` means included.
 
-> [!NOTE]
+> \[!NOTE\]
 > Only files with suffix `.nix` are candidates.
-
 
 ```nix
 # import-tree.filtered : (path -> bool) -> import-tree
