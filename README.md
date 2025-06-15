@@ -4,10 +4,9 @@
 
 Module class agnostic; can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
 
-
 ## Quick Usage (with flake-parts)
 
-This example shows how to load all nix files inside `./modules`, following the 
+This example shows how to load all nix files inside `./modules`, following the
 [Dendritic Pattern](https://github.com/mightyiam/dendritic)
 
 ```nix
@@ -23,12 +22,10 @@ This example shows how to load all nix files inside `./modules`, following the
 
 Paths that have a component that begins with an underscore are ignored.
 
-
 <details>
   <summary>
 
 ## API usage
-
 
 The following goes recursively through the provided `./modules` path and imports the files whose names end with `.nix`.
 
@@ -37,8 +34,8 @@ The following goes recursively through the provided `./modules` path and imports
   imports = [  (import-tree ./modules)  ];
 }
 ```
-  
-  </summary>
+
+</summary>
 
 ## Obtaining the API
 
