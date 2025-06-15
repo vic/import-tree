@@ -2,21 +2,13 @@
 
 > Helper functions for import of [Nixpkgs module system](https://nix.dev/tutorials/module-system/) modules under a directory recursively
 
-The following goes recursively through the provided `./modules` path and imports the files whose names end with `.nix`.
+Module class agnostic; can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
 
-```nix
-{config, ...} {
-  imports = [  (import-tree ./modules)  ];
-}
-```
 
-- Module class agnostic; e.g. can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
+## Quick Usage (with flake-parts)
 
-## Ignored files
-
-Paths that have a component that begins with an underscore are ignored.
-
-## Example flake-parts usage
+This example shows how to load all nix files inside `./modules`, following the 
+[Dendritic Pattern](https://github.com/mightyiam/dendritic)
 
 ```nix
 {
@@ -26,6 +18,27 @@ Paths that have a component that begins with an underscore are ignored.
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }
 ```
+
+## Ignored files
+
+Paths that have a component that begins with an underscore are ignored.
+
+
+<details>
+  <summary>
+
+## API usage
+
+
+The following goes recursively through the provided `./modules` path and imports the files whose names end with `.nix`.
+
+```nix
+{config, ...} {
+  imports = [  (import-tree ./modules)  ];
+}
+```
+  
+  </summary>
 
 ## Obtaining the API
 
@@ -169,14 +182,17 @@ import-tree.pipeTo lib.id # equivalent to  `.leafs`
 import-tree.leafs
 ```
 
+</details>
+
 ## Why
 
 Importing a tree of nix modules has some advantages:
 
-### Pattern: each file is a flake-parts module
+### Dendritic Pattern: each file is a flake-parts module
 
 [That pattern](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271) was the original inspiration for publishing this library.
-Some of the benefits are [described in the author's personal infrastructure repository](https://github.com/mightyiam/infra#every-nix-file-is-a-flake-parts-module).
+Some of the benefits are [described in the author's personal infrastructure repository](https://github.com/mightyiam/infra#every-nix-file-is-a-flake-parts-module)
+and [@drupol's blog post](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/)
 
 ### Sharing subtrees of modules as flake parts
 
