@@ -54,9 +54,19 @@ in
           ];
         };
 
+        matching."test `filter` composes with `matching`" = {
+          expr = ((lit.matching ".*/[^/]+_[^/]+\.nix").filtered (lib.hasSuffix "b.nix")).leafs ./tree;
+          expected = [ ./tree/a/a_b.nix ];
+        };
+
         mapWith."test transforms each matching file with function" = {
           expr = (lit.mapWith import).leafs ./tree/x;
           expected = [ "z" ];
+        };
+
+        mapWith."test multiple `mapWith`s compose" = {
+          expr = ((lit.mapWith import).mapWith builtins.stringLength).leafs ./tree/x;
+          expected = [ 1 ];
         };
 
         pipeTo."test pipes list into a function" = {
