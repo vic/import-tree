@@ -272,5 +272,5 @@ without having to worry whether some third-party forgot to use `foo.inputs.nixpk
 The test suite can be found in [`checkmate.nix`](checkmate.nix). To run it locally:
 
 ```sh
-nix flake check ./checkmate
+nix flake check path:checkmate --override-input target path:.
 ```
