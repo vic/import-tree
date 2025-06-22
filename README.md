@@ -184,6 +184,21 @@ Or, in a simpler but less readable way:
 
 `mapWith` can be combined with any number of `filtered` and `matching` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
 
+### `import-tree.addPath`
+
+`addPath` can be used to prepend paths to be filtered as a setup for import-tree.
+This function can be applied multiple times.
+
+```nix
+# import-tree.addPath : (path_or_list_of_paths) -> import-tree
+
+# Both of these result in the same imported files.
+# however, the first adds ./vendor as a *pre-configured* path.
+# and the final user can supply ./modules or [] empty.
+(import-tree.addPath ./vendor) ./modules
+import-tree [./vendor ./modules]
+```
+
 ### `import-tree.withLib`
 
 > \[!NOTE\]
@@ -273,4 +288,10 @@ The test suite can be found in [`checkmate.nix`](checkmate.nix). To run it local
 
 ```sh
 nix flake check path:checkmate --override-input target path:.
+```
+
+Run the following to format files:
+
+```sh
+nix run github:vic/checkmate#fmt
 ```
