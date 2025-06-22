@@ -102,11 +102,87 @@ lib.pipe import-tree [
 ]
 ```
 
-Here is a less readable equivalent:
+Here is a simpler but less readable equivalent:
 
 ```nix
 ((import-tree.mapWith lib.traceVal).filtered (lib.hasInfix ".mod.")) ./modules
 ```
+
+### `import-tree.filtered`
+
+`filtered` takes a predicate function `path -> bool`. Only paths for which the filter returns `true` are selected:
+
+> \[!NOTE\]
+> Only files with suffix `.nix` are candidates.
+
+```nix
+# import-tree.filtered : (path -> bool) -> import-tree
+
+import-tree.filtered (lib.hasInfix ".mod.") ./some-dir
+```
+
+`filtered` can be applied multiple times, in which case only the files matching _all_ filters will be selected:
+
+```nix
+lib.pipe import-tree [
+  (i: i.filtered (lib.hasInfix ".mod."))
+  (i: i.filtered (lib.hasSuffix "default.nix"))
+  (i: i ./some-dir)
+]
+```
+
+Or, in a simpler but less readable way:
+
+```nix
+(import-tree.filtered (lib.hasInfix ".mod.")).filtered (lib.hasSuffix "default.nix") ./some-dir
+```
+
+### `import-tree.matching`
+
+`matching` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
+
+```nix
+# import-tree.matching : regex -> import-tree
+
+import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
+```
+
+`matching` can be applied multiple times, in which case only the paths matching _all_ regex patterns will be selected, and can be combined with any number of `filtered`, in any order.
+
+### `import-tree.mapWith`
+
+`mapWith` can be used to transform each path by providing a function.
+
+e.g. to convert the path into a module explicitly:
+
+```nix
+# import-tree.mapWith : (path -> any) -> import-tree
+
+import-tree.mapWith (path: {
+  imports = [ path ];
+  # assuming such an option is declared
+  automaticallyImportedPaths = [ path ];
+})
+```
+
+`mapWith` can be applied multiple times, composing the transformations:
+
+```nix
+lib.pipe import-tree [
+  (i: i.mapWith (lib.removeSuffix ".nix"))
+  (i: i.mapWith builtins.stringLength)
+] ./some-dir
+```
+
+The above example first removes the `.nix` suffix from all selected paths, then takes their lengths.
+
+Or, in a simpler but less readable way:
+
+```nix
+((import-tree.mapWith (lib.removeSuffix ".nix")).mapWith builtins.stringLength) ./some-dir
+```
+
+`mapWith` can be combined with any number of `filtered` and `matching` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
 
 ### `import-tree.withLib`
 
@@ -118,44 +194,6 @@ Here is a less readable equivalent:
 # import-tree.withLib : lib -> import-tree
 
 import-tree.withLib pkgs.lib
-```
-
-### `import-tree.filtered`
-
-`filtered` takes a predicate function `path -> bool`. `true` means included.
-
-> \[!NOTE\]
-> Only files with suffix `.nix` are candidates.
-
-```nix
-# import-tree.filtered : (path -> bool) -> import-tree
-
-import-tree.filtered (lib.hasInfix ".mod.") ./some-dir
-```
-
-### `import-tree.matching`
-
-`matching` takes a regular expression. The regex should match the full path for the path to be selected. Match is done with `lib.strings.match`;
-
-```nix
-# import-tree.matching : regex -> import-tree
-
-import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
-```
-
-### `import-tree.mapWith`
-
-`mapWith` can be used to transform each path by providing a function.
-e.g. to convert the path into a module explicitly.
-
-```nix
-# import-tree.mapWith : (path -> any) -> import-tree
-
-import-tree.mapWith (path: {
-  imports = [ path ];
-  # assuming such an option is declared
-  automaticallyImportedPaths = [ path ];
-})
 ```
 
 ### `import-tree.pipeTo`
@@ -171,7 +209,7 @@ import-tree.pipeTo lib.id # equivalent to  `.leafs`
 
 ### `import-tree.leafs`
 
-`leafs` takes no arguments, it is equivalent to calling `import-tree.pipeTo lib.id`, that is, instead of producing a nix module, just return the list of results.
+`leafs` takes no arguments, it is equivalent to calling `import-tree.pipeTo lib.id`. That is, instead of producing a nix module, just return the list of results.
 
 ```nix
 # import-tree.leafs : import-tree
@@ -226,3 +264,13 @@ So, clearly this pattern is not for every situation, but most likely for sharing
 However, one advantage of this is that the dependency tree would be flat,
 giving the final user's flake absolute control on what inputs are used,
 without having to worry whether some third-party forgot to use `foo.inputs.nixpkgs.follows = "nixpkgs";` on any flake we are trying to re-use.
+
+## Testing
+
+`import-tree` uses [`checkmate`](https://github.com/vic/checkmate) for testing.
+
+The test suite can be found in [`checkmate.nix`](checkmate.nix). To run it locally:
+
+```sh
+nix flake check ./checkmate
+```
