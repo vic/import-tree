@@ -5,6 +5,7 @@ let
       filterf ? null,
       mapf ? null,
       pipef ? null,
+      paths ? [ ],
       ...
     }:
     path:
@@ -29,13 +30,15 @@ let
         let
           initialFilter = p: lib.hasSuffix ".nix" p && !lib.hasInfix "/_" p;
         in
-        lib.pipe root [
-          (lib.lists.flatten)
-          (map lib.filesystem.listFilesRecursive)
-          (lib.lists.flatten)
-          (builtins.filter (compose (and filterf initialFilter) toString))
-          (map mapf)
-        ];
+        lib.pipe
+          [ paths root ]
+          [
+            (lib.lists.flatten)
+            (map lib.filesystem.listFilesRecursive)
+            (lib.lists.flatten)
+            (builtins.filter (compose (and filterf initialFilter) toString))
+            (map mapf)
+          ];
 
     in
     result;
@@ -63,6 +66,7 @@ let
         # Accumulated configuration
         mapf = (i: i);
         filterf = _: true;
+        paths = [ ];
 
         __functor = self: f: {
           config = (f self);
@@ -72,6 +76,7 @@ let
           filtered = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
           matching = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
           mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
+          addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
 
           # Configuration updates (non-accumulating)
           withLib = lib: self (c: (f c) // { inherit lib; });

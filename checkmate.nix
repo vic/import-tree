@@ -84,6 +84,20 @@ in
           expected = [ 1 ];
         };
 
+        addPath."test `addPath` prepends a path to filter" = {
+          expr = (lit.addPath ./tree/x).leafs [ ];
+          expected = [ ./tree/x/y.nix ];
+        };
+
+        addPath."test `addPath` can be called multiple times" = {
+          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs [ ];
+          expected = [
+            ./tree/x/y.nix
+            ./tree/a/b/b_a.nix
+            ./tree/a/b/m.nix
+          ];
+        };
+
         pipeTo."test pipes list into a function" = {
           expr = (lit.mapWith lib.pathType).pipeTo (lib.length) ./tree/x;
           expected = 1;
