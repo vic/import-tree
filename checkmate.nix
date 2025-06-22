@@ -41,6 +41,11 @@ in
           expected = [ ./tree/a/b/m.nix ];
         };
 
+        filtered."test multiple `filtered`s compose" = {
+          expr = ((lit.filtered (lib.hasInfix "b/")).filtered (lib.hasInfix "_")).leafs ./tree;
+          expected = [ ./tree/a/b/b_a.nix ];
+        };
+
         matching."test returns empty if no files matching regex" = {
           expr = (lit.matching "badregex").leafs ./tree;
           expected = [ ];
@@ -54,13 +59,23 @@ in
           ];
         };
 
-        matching."test `filter` composes with `matching`" = {
+        matching."test `matching` composes with `filtered`" = {
           expr = ((lit.matching ".*/[^/]+_[^/]+\.nix").filtered (lib.hasSuffix "b.nix")).leafs ./tree;
+          expected = [ ./tree/a/a_b.nix ];
+        };
+
+        matching."test multiple `matching`s compose" = {
+          expr = ((lit.matching ".*/[^/]+_[^/]+\.nix").matching ".*b\.nix").leafs ./tree;
           expected = [ ./tree/a/a_b.nix ];
         };
 
         mapWith."test transforms each matching file with function" = {
           expr = (lit.mapWith import).leafs ./tree/x;
+          expected = [ "z" ];
+        };
+
+        mapWith."test `mapWith` composes with `filtered`" = {
+          expr = ((lit.filtered (lib.hasInfix "/x")).mapWith import).leafs ./tree;
           expected = [ "z" ];
         };
 
