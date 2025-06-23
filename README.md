@@ -98,7 +98,7 @@ attribute-set *meaning it is _NOT_ a path or list of paths*, the `import-tree` o
 assumes it is being imported as a module. This way, a pre-configured `import-tree` can
 also be used directly in a list of module imports.
 
-This is useful for authors exposing pre-configured `import-tree`s that users can direcly
+This is useful for authors exposing pre-configured `import-tree`s that users can directly
 add to their import list or continue configuring themselves using the API.
 
 ```nix
