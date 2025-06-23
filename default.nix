@@ -73,28 +73,36 @@ let
     let
       __config = {
         # Accumulated configuration
+        api = { };
         mapf = (i: i);
         filterf = _: true;
         paths = [ ];
 
-        __functor = self: f: {
-          __config = (f self);
-          __functor = functor;
+        __functor =
+          self: f:
+          let
+            __config = (f self);
+          in
+          __config.api
+          // {
+            inherit __config;
+            __functor = functor;
 
-          # Configuration updates (accumulating)
-          filtered = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
-          matching = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
-          mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
-          addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
+            # Configuration updates (accumulating)
+            filtered = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
+            matching = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
+            mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
+            addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
+            addAPI = api: self (c: mapAttr (f c) "api" (a: a // builtins.mapAttrs (_: g: g (self f)) api));
 
-          # Configuration updates (non-accumulating)
-          withLib = lib: self (c: (f c) // { inherit lib; });
-          pipeTo = pipef: self (c: (f c) // { inherit pipef; });
-          leafs = self (c: (f c) // { pipef = (i: i); });
+            # Configuration updates (non-accumulating)
+            withLib = lib: self (c: (f c) // { inherit lib; });
+            pipeTo = pipef: self (c: (f c) // { inherit pipef; });
+            leafs = self (c: (f c) // { pipef = (i: i); });
 
-          # Applies empty (for already path-configured trees)
-          result = (self f) [ ];
-        };
+            # Applies empty (for already path-configured trees)
+            result = (self f) [ ];
+          };
       };
     in
     __config (c: c);

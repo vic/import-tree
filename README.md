@@ -35,9 +35,7 @@ The following goes recursively through `./modules` and imports all `.nix` files.
 }
 ```
 
-For more advanced usage, `import-tree` can be configured via its builder API.
-This means that the result of calling a function on an `import-tree` object
-is itself another `import-tree` object.
+For more advanced usage, `import-tree` can be configured via its extensible API.
 
 </summary>
 
@@ -94,20 +92,28 @@ The following is valid usage:
 ```
 
 As an special case, when the single argument given to an `import-tree` object is an
-attribute-set *meaning it is _NOT_ a path or list of paths*, the `import-tree` object
-assumes it is being imported as a module. This way, a pre-configured `import-tree` can
+attribute-set *-it is _NOT_ a path or list of paths-*, the `import-tree` object
+assumes it is being evaluated as a module. This way, a pre-configured `import-tree` can
 also be used directly in a list of module imports.
 
 This is useful for authors exposing pre-configured `import-tree`s that users can directly
-add to their import list or continue configuring themselves using the API.
+add to their import list or continue configuring themselves using its API.
 
 ```nix
 let
-  # imagine this configured tree is actually provided by some flake or library.
-  # users can directly import it or continue using API methods on it.
-  configured-tree = import-tree.addPath [./a [./b]]; # paths are configured by library author.
+  # imagine this configured tree comes from some author's flake or library.
+  # library author can extend an import-tree with custom API methods
+  # according to the library's directory and file naming conventions.
+  configured-tree = import-tree.addAPI {
+    # the knowledge of where modules are located inside the library structure
+    # or which filters/regexes/transformations to apply are abstracted 
+    # from the user by the author providing a meaningful API.
+    maximal = self: self.addPath ./modules;
+    minimal = self: self.maximal.filtered (lib.hasInfix "minimal");
+  };
 in {
-  imports = [ configured-tree ]; # but then imported or further configured by the library user.
+  # the library user can directly import or further configure an import-tree.
+  imports = [ configured-tree.minimal ];
 }
 ```
 
@@ -221,6 +227,26 @@ This function can be applied multiple times.
 import-tree [./vendor ./modules]
 ```
 
+### `import-tree.addAPI`
+
+`addAPI` extends the current import-tree object with new methods.
+The API is cumulative, meaning that this function can be called multiple times.
+
+`addAPI` takes an attribute set of functions taking a single argument:
+`self` which is the current import-tree object.
+
+```nix
+# import-tree.addAPI : api-attr-set -> import-tree
+
+import-tree.addAPI {
+  maximal = self: self.addPath ./modules;
+  feature = self: featureName: self.maximal.filtered (lib.hasInfix feature);
+  minimal = self: self.feature "minimal";
+}
+```
+
+on the previous API, users can call `import-tree.feature "+vim"` or `import-tree.minimal`, etc.
+
 ### `import-tree.withLib`
 
 > \[!NOTE\]
@@ -283,26 +309,42 @@ to learn about the Dendritic pattern advantages.
 
 ### Sharing pre-configured subtrees of modules
 
-Since the import-tree API lets you prepend paths and filter which files to include,
-you could have flakes that output different sets of pre-configured trees.
+<details>
+<summary>
+
+Since the import-tree API is _extensible_ and lets you add paths or
+filters at configuration time, library authors can provide pre-configured
+import-trees and custom API methods for their particular needs.
+
+</summary>
 
 This would allow us to have community-driven *sets* of configurations,
 much like those popular for editors: spacemacs/lazy-vim distributions.
 
-Imagine an editor distribution exposing the following `lib.trees` flake output:
+Imagine an editor distribution exposing the following flake output:
 
 ```nix
 # editor-distro's flakeModule
 {inputs, lib, ...}:
 let 
-  flake.lib.trees = {
-    inherit root on off xor;
-  };
+  flake.lib.modules-tree = lib.pipe import-tree [
+    (i: i.addPath ./modules)
+    (i: i.addAPI { inherit hadDirMatching on off exclusive; })
+    (i: i.addAPI { ruby = self: self.on "ruby"; })
+    (i: i.addAPI { python = self: self.on "python"; })
+    (i: i.addAPI { old-school = self: self.off "copilot"; })
+    (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
+  ];
 
-  root = inputs.import-tree.addPath ./modules;
+  hasDirMatching = self: re: self.matching ".*/.*?${re}.*/.*";
 
-  on = flag: tree: tree.filter (lib.hasInfix "/+${flag}/");
-  off = flag: tree: tree.filter (lib.hasInfix "/-${flag}/");
+  on = self: flagName: self.hasDirMatching "\+${flagName}";
+  off = self: flagName: self.hasDirMatching "\-${flagName}";
+
+  exclusive = self: onFlag: offFlag: lib.pipe self [
+    (self: self.on onFlag)
+    (self: self.off offFlag)
+  ];
 in
 {
   inherit flake;
@@ -314,14 +356,15 @@ Users of such distribution can do:
 ```nix
 # consumer flakeModule
 {inputs, lib, ...}: let
-  inherit (inputs.editor-distro.lib.trees) on off root;
+  ed-tree = inputs.editor-distro.lib.modules-tree;
 in {
   imports = [
-    # files inside +vim -emacs directories
-    (lib.pipe root [(on "vim") (off "emacs") (i: i.result)])
+    (ed-tree.vim-btw.old-school.on "rust")
   ];
 }
 ```
+
+</details>
 
 ## Testing
 
