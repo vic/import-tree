@@ -61,15 +61,12 @@ let
     attrs // { ${k} = f attrs.${k}; };
 
   functor =
-    self: args:
+    self: path:
     let
-      imported-as-module = builtins.isAttrs args;
-      module = {
-        imports = [ (perform self.__config [ ]) ];
-      };
-      result = perform self.__config args;
+      imported-as-module = builtins.isAttrs path;
+      arg = if imported-as-module then [ ] else path;
     in
-    if imported-as-module then module else result;
+    perform self.__config arg;
 
   callable =
     let
