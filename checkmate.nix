@@ -121,6 +121,24 @@ in
             oneElement inner.imports;
           expected = ./tree/x/y.nix;
         };
+
+        import-tree."test evaluates returned module as part of module-eval" = {
+          expr =
+            let
+              res = lib.modules.evalModules { modules = [ (it ./tree/modules) ]; };
+            in
+            res.config.hello;
+          expected = "world";
+        };
+
+        import-tree."test can itself be used as a module" = {
+          expr =
+            let
+              res = lib.modules.evalModules { modules = [ (it.addPath ./tree/modules) ]; };
+            in
+            res.config.hello;
+          expected = "world";
+        };
       };
 
     }

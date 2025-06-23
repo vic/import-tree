@@ -27,13 +27,17 @@ Paths that have a component that begins with an underscore are ignored.
 
 ## API usage
 
-The following goes recursively through the provided `./modules` path and imports the files whose names end with `.nix`.
+The following goes recursively through `./modules` and imports all `.nix` files.
 
 ```nix
 {config, ...} {
   imports = [  (import-tree ./modules)  ];
 }
 ```
+
+For more advanced usage, `import-tree` can be configured via its builder API.
+This means that the result of calling a function on an `import-tree` object
+is itself another `import-tree` object.
 
 </summary>
 
@@ -89,16 +93,34 @@ The following is valid usage:
 }
 ```
 
+As an special case, when the single argument given to an `import-tree` object is an
+attribute-set *meaning it is _NOT_ a path or list of paths*, the `import-tree` object
+assumes it is being imported as a module. This way, a pre-configured `import-tree` can
+also be used directly in a list of module imports.
+
+This is useful for authors exposing pre-configured `import-tree`s that users can direcly
+add to their import list or continue configuring themselves using the API.
+
+```nix
+let
+  # imagine this configured tree is actually provided by some flake or library.
+  # users can directly import it or continue using API methods on it.
+  configured-tree = import-tree.addPath [./a [./b]]; # paths are configured by library author.
+in {
+  imports = [ configured-tree ]; # but then imported or further configured by the library user.
+}
+```
+
 ## Configurable behavior
 
-`import-tree` functions with custom behavior can be obtained using a builder pattern.
+`import-tree` objects with custom behavior can be obtained using a builder pattern.
 For example:
 
 ```nix
 lib.pipe import-tree [
-  (i: i.mapWith lib.traceVal) # trace all paths
+  (i: i.mapWith lib.traceVal) # trace all paths. useful for debugging what is being imported.
   (i: i.filtered (lib.hasInfix ".mod.")) # filter nix files by some predicate
-  (i: i ./modules) # finally, call the configured callable with a path
+  (i: i ./modules) # finally, call the configured import-tree with a path
 ]
 ```
 

@@ -58,18 +58,27 @@ let
     attrs: k: f:
     attrs // { ${k} = f attrs.${k}; };
 
-  functor = self: perform self.config;
+  functor =
+    self: args:
+    let
+      imported-as-module = builtins.isAttrs args;
+      module = {
+        imports = [ (perform self.__config [ ]) ];
+      };
+      result = perform self.__config args;
+    in
+    if imported-as-module then module else result;
 
   callable =
     let
-      config = {
+      __config = {
         # Accumulated configuration
         mapf = (i: i);
         filterf = _: true;
         paths = [ ];
 
         __functor = self: f: {
-          config = (f self);
+          __config = (f self);
           __functor = functor;
 
           # Configuration updates (accumulating)
@@ -88,7 +97,7 @@ let
         };
       };
     in
-    config (c: c);
+    __config (c: c);
 
 in
 callable
