@@ -31,51 +31,51 @@ in
           ];
         };
 
-        filtered."test returns empty if no nix files with true predicate" = {
-          expr = (lit.filtered (_: false)).leafs ./tree;
+        filter."test returns empty if no nix files with true predicate" = {
+          expr = (lit.filter (_: false)).leafs ./tree;
           expected = [ ];
         };
 
-        filtered."test only returns nix files with true predicate" = {
-          expr = (lit.filtered (lib.hasSuffix "m.nix")).leafs ./tree;
+        filter."test only returns nix files with true predicate" = {
+          expr = (lit.filter (lib.hasSuffix "m.nix")).leafs ./tree;
           expected = [ ./tree/a/b/m.nix ];
         };
 
-        filtered."test multiple `filtered`s compose" = {
-          expr = ((lit.filtered (lib.hasInfix "b/")).filtered (lib.hasInfix "_")).leafs ./tree;
+        filter."test multiple `filter`s compose" = {
+          expr = ((lit.filter (lib.hasInfix "b/")).filter (lib.hasInfix "_")).leafs ./tree;
           expected = [ ./tree/a/b/b_a.nix ];
         };
 
-        matching."test returns empty if no files matching regex" = {
-          expr = (lit.matching "badregex").leafs ./tree;
+        match."test returns empty if no files match regex" = {
+          expr = (lit.match "badregex").leafs ./tree;
           expected = [ ];
         };
 
-        matching."test returns files matching regex" = {
-          expr = (lit.matching ".*/[^/]+_[^/]+\.nix").leafs ./tree;
+        match."test returns files match regex" = {
+          expr = (lit.match ".*/[^/]+_[^/]+\.nix").leafs ./tree;
           expected = [
             ./tree/a/a_b.nix
             ./tree/a/b/b_a.nix
           ];
         };
 
-        matching."test `matching` composes with `filtered`" = {
-          expr = ((lit.matching ".*/[^/]+_[^/]+\.nix").filtered (lib.hasSuffix "b.nix")).leafs ./tree;
+        match."test `match` composes with `filter`" = {
+          expr = ((lit.match ".*/[^/]+_[^/]+\.nix").filter (lib.hasSuffix "b.nix")).leafs ./tree;
           expected = [ ./tree/a/a_b.nix ];
         };
 
-        matching."test multiple `matching`s compose" = {
-          expr = ((lit.matching ".*/[^/]+_[^/]+\.nix").matching ".*b\.nix").leafs ./tree;
+        match."test multiple `match`s compose" = {
+          expr = ((lit.match ".*/[^/]+_[^/]+\.nix").match ".*b\.nix").leafs ./tree;
           expected = [ ./tree/a/a_b.nix ];
         };
 
-        mapWith."test transforms each matching file with function" = {
+        mapWith."test transforms each match file with function" = {
           expr = (lit.mapWith import).leafs ./tree/x;
           expected = [ "z" ];
         };
 
-        mapWith."test `mapWith` composes with `filtered`" = {
-          expr = ((lit.filtered (lib.hasInfix "/x")).mapWith import).leafs ./tree;
+        mapWith."test `mapWith` composes with `filter`" = {
+          expr = ((lit.filter (lib.hasInfix "/x")).mapWith import).leafs ./tree;
           expected = [ "z" ];
         };
 

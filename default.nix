@@ -89,8 +89,8 @@ let
             __functor = functor;
 
             # Configuration updates (accumulating)
-            filtered = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
-            matching = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
+            filter = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
+            match = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
             mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
             addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
             addAPI = api: self (c: mapAttr (f c) "api" (a: a // builtins.mapAttrs (_: g: g (self f)) api));

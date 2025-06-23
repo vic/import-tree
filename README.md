@@ -109,7 +109,7 @@ let
     # or which filters/regexes/transformations to apply are abstracted 
     # from the user by the author providing a meaningful API.
     maximal = self: self.addPath ./modules;
-    minimal = self: self.maximal.filtered (lib.hasInfix "minimal");
+    minimal = self: self.maximal.filter (lib.hasInfix "minimal");
   };
 in {
   # the library user can directly import or further configure an import-tree.
@@ -125,7 +125,7 @@ For example:
 ```nix
 lib.pipe import-tree [
   (i: i.mapWith lib.traceVal) # trace all paths. useful for debugging what is being imported.
-  (i: i.filtered (lib.hasInfix ".mod.")) # filter nix files by some predicate
+  (i: i.filter (lib.hasInfix ".mod.")) # filter nix files by some predicate
   (i: i ./modules) # finally, call the configured import-tree with a path
 ]
 ```
@@ -133,28 +133,28 @@ lib.pipe import-tree [
 Here is a simpler but less readable equivalent:
 
 ```nix
-((import-tree.mapWith lib.traceVal).filtered (lib.hasInfix ".mod.")) ./modules
+((import-tree.mapWith lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
 ```
 
-### `import-tree.filtered`
+### `import-tree.filter`
 
-`filtered` takes a predicate function `path -> bool`. Only paths for which the filter returns `true` are selected:
+`filter` takes a predicate function `path -> bool`. Only paths for which the filter returns `true` are selected:
 
 > \[!NOTE\]
 > Only files with suffix `.nix` are candidates.
 
 ```nix
-# import-tree.filtered : (path -> bool) -> import-tree
+# import-tree.filter : (path -> bool) -> import-tree
 
-import-tree.filtered (lib.hasInfix ".mod.") ./some-dir
+import-tree.filter (lib.hasInfix ".mod.") ./some-dir
 ```
 
-`filtered` can be applied multiple times, in which case only the files matching _all_ filters will be selected:
+`filter` can be applied multiple times, in which case only the files match _all_ filters will be selected:
 
 ```nix
 lib.pipe import-tree [
-  (i: i.filtered (lib.hasInfix ".mod."))
-  (i: i.filtered (lib.hasSuffix "default.nix"))
+  (i: i.filter (lib.hasInfix ".mod."))
+  (i: i.filter (lib.hasSuffix "default.nix"))
   (i: i ./some-dir)
 ]
 ```
@@ -162,20 +162,20 @@ lib.pipe import-tree [
 Or, in a simpler but less readable way:
 
 ```nix
-(import-tree.filtered (lib.hasInfix ".mod.")).filtered (lib.hasSuffix "default.nix") ./some-dir
+(import-tree.filter (lib.hasInfix ".mod.")).filter (lib.hasSuffix "default.nix") ./some-dir
 ```
 
-### `import-tree.matching`
+### `import-tree.match`
 
-`matching` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
+`match` takes a regular expression. The regex should match the full path for the path to be selected. match is done with `builtins.match`.
 
 ```nix
-# import-tree.matching : regex -> import-tree
+# import-tree.match : regex -> import-tree
 
-import-tree.matching ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
+import-tree.match ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
 ```
 
-`matching` can be applied multiple times, in which case only the paths matching _all_ regex patterns will be selected, and can be combined with any number of `filtered`, in any order.
+`match` can be applied multiple times, in which case only the paths match _all_ regex patterns will be selected, and can be combined with any number of `filter`, in any order.
 
 ### `import-tree.mapWith`
 
@@ -210,11 +210,11 @@ Or, in a simpler but less readable way:
 ((import-tree.mapWith (lib.removeSuffix ".nix")).mapWith builtins.stringLength) ./some-dir
 ```
 
-`mapWith` can be combined with any number of `filtered` and `matching` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
+`mapWith` can be combined with any number of `filter` and `match` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
 
 ### `import-tree.addPath`
 
-`addPath` can be used to prepend paths to be filtered as a setup for import-tree.
+`addPath` can be used to prepend paths to be filter as a setup for import-tree.
 This function can be applied multiple times.
 
 ```nix
@@ -240,7 +240,7 @@ The API is cumulative, meaning that this function can be called multiple times.
 
 import-tree.addAPI {
   maximal = self: self.addPath ./modules;
-  feature = self: featureName: self.maximal.filtered (lib.hasInfix feature);
+  feature = self: featureName: self.maximal.filter (lib.hasInfix feature);
   minimal = self: self.feature "minimal";
 }
 ```
@@ -340,10 +340,10 @@ let
     (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
   ];
 
-  hasDirMatching = self: re: self.matching ".*/.*?${re}.*/.*";
+  hasDirmatch = self: re: self.match ".*/.*?${re}.*/.*";
 
-  on = self: flagName: hasDirMatching self "\+${flagName}";
-  off = self: flagName: hasDirMatching self "\-${flagName}";
+  on = self: flagName: hasDirmatch self "\+${flagName}";
+  off = self: flagName: hasDirmatch self "\-${flagName}";
 
   exclusive = self: onFlag: offFlag: lib.pipe self [
     (self: self.on onFlag)
