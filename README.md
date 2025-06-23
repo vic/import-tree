@@ -313,8 +313,12 @@ to learn about the Dendritic pattern advantages.
 <summary>
 
 Since the import-tree API is _extensible_ and lets you add paths or
-filters at configuration time, library authors can provide pre-configured
-import-trees and custom API methods for their particular needs.
+filters at configuration time, configuration-library authors can
+provide custom import-tree instances with an API suited for their
+particular idioms.
+
+I'm exploring this on [Dennix](https://github.com/vic/dennix) - a
+community distribution of flake-parts configurations.
 
 </summary>
 
@@ -327,9 +331,9 @@ Imagine an editor distribution exposing the following flake output:
 # editor-distro's flakeModule
 {inputs, lib, ...}:
 let 
-  flake.lib.modules-tree = lib.pipe import-tree [
+  flake.lib.modules-tree = lib.pipe inputs.import-tree [
     (i: i.addPath ./modules)
-    (i: i.addAPI { inherit hadDirMatching on off exclusive; })
+    (i: i.addAPI { inherit on off exclusive; })
     (i: i.addAPI { ruby = self: self.on "ruby"; })
     (i: i.addAPI { python = self: self.on "python"; })
     (i: i.addAPI { old-school = self: self.off "copilot"; })
@@ -338,8 +342,8 @@ let
 
   hasDirMatching = self: re: self.matching ".*/.*?${re}.*/.*";
 
-  on = self: flagName: self.hasDirMatching "\+${flagName}";
-  off = self: flagName: self.hasDirMatching "\-${flagName}";
+  on = self: flagName: hasDirMatching self "\+${flagName}";
+  off = self: flagName: hasDirMatching self "\-${flagName}";
 
   exclusive = self: onFlag: offFlag: lib.pipe self [
     (self: self.on onFlag)
