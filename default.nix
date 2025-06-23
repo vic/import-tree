@@ -82,6 +82,9 @@ let
           withLib = lib: self (c: (f c) // { inherit lib; });
           pipeTo = pipef: self (c: (f c) // { inherit pipef; });
           leafs = self (c: (f c) // { pipef = (i: i); });
+
+          # Applies empty (for already path-configured trees)
+          result = (self f) [ ];
         };
       };
     in

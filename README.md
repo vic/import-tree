@@ -240,45 +240,53 @@ Importing a tree of nix modules has some advantages:
 
 ### Dendritic Pattern: each file is a flake-parts module
 
-[That pattern](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271) was the original inspiration for publishing this library.
-Some of the benefits are [described in the author's personal infrastructure repository](https://github.com/mightyiam/infra#every-nix-file-is-a-flake-parts-module)
-and [@drupol's blog post](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/)
+[That pattern](https://github.com/mightyiam/dendritic) was the original inspiration for this library.
+See [@mightyiam's post](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271),
+[@drupol's blog post](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/) and
+[@vic's reply](https://discourse.nixos.org/t/how-do-you-structure-your-nixos-configs/65851/8)
+to learn about the Dendritic pattern advantages.
 
-### Sharing subtrees of modules as flake parts
+### Sharing pre-configured subtrees of modules
 
-People could share sub-trees of modules as different sets of functionality.
-for example, by-feature layers in a neovim distribution.
+Since the import-tree API lets you prepend paths and filter which files to include,
+you could have flakes that output different sets of pre-configured trees.
+
+This would allow us to have community-driven *sets* of configurations,
+much like those popular for editors: spacemacs/lazy-vim distributions.
+
+Imagine an editor distribution exposing the following `lib.trees` flake output:
 
 ```nix
-# flake.nix (layered configs-distro)
-{
-  outputs = _: {
-    flakeModules = {
-      options = {inputs, ...}: inputs.import-tree ./flakeModules/options;
-      minimal = {inputs, ...}: inputs.import-tree [./flakeModules/options ./flakeModules/minimal];
-      maximal = {inputs, ...}: inputs.import-tree ./flakeModules;
-
-      byFeature = featureName: {inputs, lib, ...}: inputs.import-tree.filtered (lib.hasSuffix "${featureName}.nix") ./flakeModules;
-    };
+# editor-distro's flakeModule
+{inputs, lib, ...}:
+let 
+  flake.lib.trees = {
+    inherit root on off xor;
   };
+
+  root = inputs.import-tree.addPath ./modules;
+
+  on = flag: tree: tree.filter (lib.hasInfix "/+${flag}/");
+  off = flag: tree: tree.filter (lib.hasInfix "/-${flag}/");
+in
+{
+  inherit flake;
 }
 ```
 
-Note that in the previous example, the flake does not requires inputs.
-That's not actually a requirement of this library, the flake *could* define its own inputs just as any other flake does.
-However, this example can help illustrate another pattern:
+Users of such distribution can do:
 
-### Flakes with no inputs exposing just `flakeModules`
-
-This pattern (as illustrated by the flake code above) declares no inputs.
-Yet the exposed flakeModules have access to the final user's flake inputs.
-
-This bypasses the `flake.lock` advantages--`nix flake lock` wont even generate a file--
-and since the code has no guarantee on which version of the dependency inputs it will run using library code will probably break.
-So, clearly this pattern is not for every situation, but most likely for sharing modules.
-However, one advantage of this is that the dependency tree would be flat,
-giving the final user's flake absolute control on what inputs are used,
-without having to worry whether some third-party forgot to use `foo.inputs.nixpkgs.follows = "nixpkgs";` on any flake we are trying to re-use.
+```nix
+# consumer flakeModule
+{inputs, lib, ...}: let
+  inherit (inputs.editor-distro.lib.trees) on off root;
+in {
+  imports = [
+    # files inside +vim -emacs directories
+    (lib.pipe root [(on "vim") (off "emacs") (i: i.result)])
+  ];
+}
+```
 
 ## Testing
 
