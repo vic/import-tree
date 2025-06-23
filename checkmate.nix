@@ -106,6 +106,26 @@ in
           ];
         };
 
+        addAPI."test extends the API available on an import-tree object" = {
+          expr =
+            let
+              extended = lit.addAPI { helloOption = self: self.addPath ./tree/modules/hello-option; };
+            in
+            extended.helloOption.leafs.result;
+          expected = [ ./tree/modules/hello-option/mod.nix ];
+        };
+
+        addAPI."test preserves previous API extensions on an import-tree object" = {
+          expr =
+            let
+              first = lit.addAPI { helloOption = self: self.addPath ./tree/modules/hello-option; };
+              second = first.addAPI { helloWorld = self: self.addPath ./tree/modules/hello-world; };
+              extended = second.addAPI { res = self: self.helloOption.leafs.result; };
+            in
+            extended.res;
+          expected = [ ./tree/modules/hello-option/mod.nix ];
+        };
+
         pipeTo."test pipes list into a function" = {
           expr = (lit.mapWith lib.pathType).pipeTo (lib.length) ./tree/x;
           expected = 1;
