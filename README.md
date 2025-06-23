@@ -136,7 +136,7 @@ Here is a simpler but less readable equivalent:
 ((import-tree.mapWith lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
 ```
 
-### `import-tree.filter`
+### `import-tree.filter` and `import-tree.filterNot`
 
 `filter` takes a predicate function `path -> bool`. Only paths for which the filter returns `true` are selected:
 
@@ -165,7 +165,7 @@ Or, in a simpler but less readable way:
 (import-tree.filter (lib.hasInfix ".mod.")).filter (lib.hasSuffix "default.nix") ./some-dir
 ```
 
-### `import-tree.match`
+### `import-tree.match` and `import-tree.matchNot`
 
 `match` takes a regular expression. The regex should match the full path for the path to be selected. match is done with `builtins.match`.
 
@@ -340,10 +340,10 @@ let
     (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
   ];
 
-  hasDirmatch = self: re: self.match ".*/.*?${re}.*/.*";
+  flagRe = flag: ".*/.*?\+${flag}.*/.*"; # matches +foo on dir path
 
-  on = self: flagName: hasDirmatch self "\+${flagName}";
-  off = self: flagName: hasDirmatch self "\-${flagName}";
+  on = self: flagName: self.match (flagRe flagName);
+  off = self: flagName: self.matchNot (flagRe flagName);
 
   exclusive = self: onFlag: offFlag: lib.pipe self [
     (self: self.on onFlag)

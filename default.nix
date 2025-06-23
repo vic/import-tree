@@ -52,6 +52,8 @@ let
     g: f: x:
     f x && g x;
 
+  andNot = g: and (x: !(g x));
+
   matchesRegex = re: p: builtins.match re p != null;
 
   mapAttr =
@@ -90,7 +92,9 @@ let
 
             # Configuration updates (accumulating)
             filter = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
+            filterNot = filterf: self (c: mapAttr (f c) "filterf" (andNot filterf));
             match = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
+            matchNot = regex: self (c: mapAttr (f c) "filterf" (andNot (matchesRegex regex)));
             mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
             addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
             addAPI = api: self (c: mapAttr (f c) "api" (a: a // builtins.mapAttrs (_: g: g (self f)) api));
