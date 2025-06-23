@@ -232,6 +232,19 @@ import-tree.pipeTo lib.id # equivalent to  `.leafs`
 import-tree.leafs
 ```
 
+### `import-tree.result`
+
+Exactly the same as calling the import-tree object with an empty list `[ ]`.
+This is useful for import-tree objects that already have paths configured via `.addPath`.
+
+```nix
+# import-tree.result : <module-or-piped-result>
+
+# these two are exactly the same:
+(import-tree.addPath ./modules).result
+(import-tree.addPath ./modules) [ ]
+```
+
 </details>
 
 ## Why
