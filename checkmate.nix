@@ -59,6 +59,13 @@ in
           ];
         };
 
+        matchNot."test returns files not match regex" = {
+          expr = (lit.matchNot ".*/[^/]+_[^/]+\.nix").leafs ./tree/a/b;
+          expected = [
+            ./tree/a/b/m.nix
+          ];
+        };
+
         match."test `match` composes with `filter`" = {
           expr = ((lit.match ".*/[^/]+_[^/]+\.nix").filter (lib.hasSuffix "b.nix")).leafs ./tree;
           expected = [ ./tree/a/a_b.nix ];
