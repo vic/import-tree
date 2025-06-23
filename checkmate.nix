@@ -85,16 +85,24 @@ in
         };
 
         addPath."test `addPath` prepends a path to filter" = {
-          expr = (lit.addPath ./tree/x).leafs [ ];
+          expr = (lit.addPath ./tree/x).leafs.result;
           expected = [ ./tree/x/y.nix ];
         };
 
         addPath."test `addPath` can be called multiple times" = {
-          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs [ ];
+          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs.result;
           expected = [
             ./tree/x/y.nix
             ./tree/a/b/b_a.nix
             ./tree/a/b/m.nix
+          ];
+        };
+
+        addPath."test `addPath` identity" = {
+          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs.result;
+          expected = lit.leafs [
+            ./tree/x
+            ./tree/a/b
           ];
         };
 
