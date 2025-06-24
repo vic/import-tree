@@ -18,6 +18,15 @@ This example shows how to load all nix files inside `./modules`, following the
 }
 ```
 
+## Quick Usage (outside a modules evaluation)
+
+If you want to get a list of nix files programatically outside of a modules evaluation,
+you can use the import-tree API (read bellow for more). 
+
+```nix
+(import-tree.withLib pkgs.lib).leafs ./modules # => list of .nix files
+```
+
 ## Ignored files
 
 Paths that have a component that begins with an underscore are ignored.
