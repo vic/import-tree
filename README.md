@@ -327,8 +327,8 @@ filters at configuration time, configuration-library authors can
 provide custom import-tree instances with an API suited for their
 particular idioms.
 
-I'm exploring this on [Dennix](https://github.com/vic/dennix) - a
-community distribution of flake-parts configurations.
+@vic is using this on [Dennix](https://github.com/vic/dennix) for [community conventions](https://github.com/vic/dennix/blob/main/dev/modules/community/_pipeline.nix)
+on tagging files.
 
 </summary>
 
