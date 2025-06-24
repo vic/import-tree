@@ -21,7 +21,7 @@ This example shows how to load all nix files inside `./modules`, following the
 ## Quick Usage (outside a modules evaluation)
 
 If you want to get a list of nix files programmatically outside of a modules evaluation,
-you can use the import-tree API (read bellow for more). 
+you can use the import-tree API (read below for more). 
 
 ```nix
 (import-tree.withLib pkgs.lib).leafs ./modules # => list of .nix files
