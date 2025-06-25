@@ -29,12 +29,14 @@ let
         lib: root:
         let
           initialFilter = andNot (lib.hasInfix "/_") (lib.hasSuffix ".nix");
+          listFilesRecursive = x: if isImportTree x then treeFiles x else lib.filesystem.listFilesRecursive x;
+          treeFiles = t: (t.withLib lib).leafs.result;
         in
         lib.pipe
           [ paths root ]
           [
             (lib.lists.flatten)
-            (map lib.filesystem.listFilesRecursive)
+            (map listFilesRecursive)
             (lib.lists.flatten)
             (builtins.filter (compose (and filterf initialFilter) toString))
             (map mapf)
@@ -60,13 +62,11 @@ let
     attrs: k: f:
     attrs // { ${k} = f attrs.${k}; };
 
-  functor =
-    self: path:
-    let
-      imported-as-module = builtins.isAttrs path;
-      arg = if imported-as-module then [ ] else path;
-    in
-    perform self.__config arg;
+  isImportTree = and (x: x ? __config.__functor) builtins.isAttrs;
+
+  inModuleEval = and (x: x ? options) builtins.isAttrs;
+
+  functor = self: arg: perform self.__config (if inModuleEval arg then [ ] else arg);
 
   callable =
     let
