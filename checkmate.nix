@@ -51,7 +51,7 @@ in
           expected = [ ];
         };
 
-        match."test returns files match regex" = {
+        match."test returns files matching regex" = {
           expr = (lit.match ".*/[^/]+_[^/]+\.nix").leafs ./tree;
           expected = [
             ./tree/a/a_b.nix
@@ -59,7 +59,7 @@ in
           ];
         };
 
-        matchNot."test returns files not match regex" = {
+        matchNot."test returns files not matching regex" = {
           expr = (lit.matchNot ".*/[^/]+_[^/]+\.nix").leafs ./tree/a/b;
           expected = [
             ./tree/a/b/m.nix
@@ -76,18 +76,18 @@ in
           expected = [ ./tree/a/a_b.nix ];
         };
 
-        mapWith."test transforms each match file with function" = {
-          expr = (lit.mapWith import).leafs ./tree/x;
+        map."test transforms each matching file with function" = {
+          expr = (lit.map import).leafs ./tree/x;
           expected = [ "z" ];
         };
 
-        mapWith."test `mapWith` composes with `filter`" = {
-          expr = ((lit.filter (lib.hasInfix "/x")).mapWith import).leafs ./tree;
+        map."test `map` composes with `filter`" = {
+          expr = ((lit.filter (lib.hasInfix "/x")).map import).leafs ./tree;
           expected = [ "z" ];
         };
 
-        mapWith."test multiple `mapWith`s compose" = {
-          expr = ((lit.mapWith import).mapWith builtins.stringLength).leafs ./tree/x;
+        map."test multiple `map`s compose" = {
+          expr = ((lit.map import).map builtins.stringLength).leafs ./tree/x;
           expected = [ 1 ];
         };
 
@@ -134,7 +134,7 @@ in
         };
 
         pipeTo."test pipes list into a function" = {
-          expr = (lit.mapWith lib.pathType).pipeTo (lib.length) ./tree/x;
+          expr = (lit.map lib.pathType).pipeTo (lib.length) ./tree/x;
           expected = 1;
         };
 

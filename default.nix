@@ -28,7 +28,7 @@ let
       leafs =
         lib: root:
         let
-          initialFilter = p: lib.hasSuffix ".nix" p && !lib.hasInfix "/_" p;
+          initialFilter = andNot (lib.hasInfix "/_") (lib.hasSuffix ".nix");
         in
         lib.pipe
           [ paths root ]
@@ -47,7 +47,7 @@ let
     g: f: x:
     g (f x);
 
-  # Applies the second function first, to allow partial application when building the configuration.
+  # Applies the second filter first, to allow partial application when building the configuration.
   and =
     g: f: x:
     f x && g x;
@@ -92,7 +92,7 @@ let
             filterNot = filterf: self (c: mapAttr (f c) "filterf" (andNot filterf));
             match = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
             matchNot = regex: self (c: mapAttr (f c) "filterf" (andNot (matchesRegex regex)));
-            mapWith = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
+            map = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
             addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
             addAPI = api: self (c: mapAttr (f c) "api" (a: a // builtins.mapAttrs (_: g: g (self f)) api));
 
