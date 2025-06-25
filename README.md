@@ -101,8 +101,10 @@ The following is valid usage:
 }
 ```
 
+Other import-tree objects can also be given as arguments (or in lists) as if they were paths.
+
 As an special case, when the single argument given to an `import-tree` object is an
-attribute-set *-it is _NOT_ a path or list of paths-*, the `import-tree` object
+attribute-set containing an `options` attribute, the `import-tree` object
 assumes it is being evaluated as a module. This way, a pre-configured `import-tree` can
 also be used directly in a list of module imports.
 

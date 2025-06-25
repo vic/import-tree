@@ -166,6 +166,17 @@ in
             res.config.hello;
           expected = "world";
         };
+
+        import-tree."test can take other import-trees as if they were paths" = {
+          expr = (lit.filter (lib.hasInfix "mod")).leafs [
+            (it.addPath ./tree/modules/hello-option)
+            ./tree/modules/hello-world
+          ];
+          expected = [
+            ./tree/modules/hello-option/mod.nix
+            ./tree/modules/hello-world/mod.nix
+          ];
+        };
       };
 
     }
