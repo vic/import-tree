@@ -134,7 +134,7 @@ For example:
 
 ```nix
 lib.pipe import-tree [
-  (i: i.mapWith lib.traceVal) # trace all paths. useful for debugging what is being imported.
+  (i: i.map lib.traceVal) # trace all paths. useful for debugging what is being imported.
   (i: i.filter (lib.hasInfix ".mod.")) # filter nix files by some predicate
   (i: i ./modules) # finally, call the configured import-tree with a path
 ]
@@ -143,7 +143,7 @@ lib.pipe import-tree [
 Here is a simpler but less readable equivalent:
 
 ```nix
-((import-tree.mapWith lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
+((import-tree.map lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
 ```
 
 ### `import-tree.filter` and `import-tree.filterNot`
@@ -159,7 +159,7 @@ Here is a simpler but less readable equivalent:
 import-tree.filter (lib.hasInfix ".mod.") ./some-dir
 ```
 
-`filter` can be applied multiple times, in which case only the files match _all_ filters will be selected:
+`filter` can be applied multiple times, in which case only the files matching _all_ filters will be selected:
 
 ```nix
 lib.pipe import-tree [
@@ -177,7 +177,7 @@ Or, in a simpler but less readable way:
 
 ### `import-tree.match` and `import-tree.matchNot`
 
-`match` takes a regular expression. The regex should match the full path for the path to be selected. match is done with `builtins.match`.
+`match` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
 
 ```nix
 # import-tree.match : regex -> import-tree
@@ -185,30 +185,30 @@ Or, in a simpler but less readable way:
 import-tree.match ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
 ```
 
-`match` can be applied multiple times, in which case only the paths match _all_ regex patterns will be selected, and can be combined with any number of `filter`, in any order.
+`match` can be applied multiple times, in which case only the paths matching _all_ regex patterns will be selected, and can be combined with any number of `filter`, in any order.
 
-### `import-tree.mapWith`
+### `import-tree.map`
 
-`mapWith` can be used to transform each path by providing a function.
+`map` can be used to transform each path by providing a function.
 
 e.g. to convert the path into a module explicitly:
 
 ```nix
-# import-tree.mapWith : (path -> any) -> import-tree
+# import-tree.map : (path -> any) -> import-tree
 
-import-tree.mapWith (path: {
+import-tree.map (path: {
   imports = [ path ];
   # assuming such an option is declared
   automaticallyImportedPaths = [ path ];
 })
 ```
 
-`mapWith` can be applied multiple times, composing the transformations:
+`map` can be applied multiple times, composing the transformations:
 
 ```nix
 lib.pipe import-tree [
-  (i: i.mapWith (lib.removeSuffix ".nix"))
-  (i: i.mapWith builtins.stringLength)
+  (i: i.map (lib.removeSuffix ".nix"))
+  (i: i.map builtins.stringLength)
 ] ./some-dir
 ```
 
@@ -217,10 +217,10 @@ The above example first removes the `.nix` suffix from all selected paths, then 
 Or, in a simpler but less readable way:
 
 ```nix
-((import-tree.mapWith (lib.removeSuffix ".nix")).mapWith builtins.stringLength) ./some-dir
+((import-tree.map (lib.removeSuffix ".nix")).map builtins.stringLength) ./some-dir
 ```
 
-`mapWith` can be combined with any number of `filter` and `match` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
+`map` can be combined with any number of `filter` and `match` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
 
 ### `import-tree.addPath`
 
