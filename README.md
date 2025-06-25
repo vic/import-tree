@@ -327,8 +327,7 @@ filters at configuration time, configuration-library authors can
 provide custom import-tree instances with an API suited for their
 particular idioms.
 
-@vic is using this on [Dennix](https://github.com/vic/dennix) for [community conventions](https://github.com/vic/dennix/blob/main/dev/modules/community/_pipeline.nix)
-on tagging files.
+@vic is using this on [Dendrix](https://github.com/vic/dendrix) for [community conventions](https://github.com/vic/dendrix/blob/main/dev/modules/community/_pipeline.nix) on tagging files.
 
 </summary>
 
@@ -350,14 +349,11 @@ let
     (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
   ];
 
-  flagRe = flag: ".*/.*?\+${flag}.*/.*"; # matches +foo on dir path
-
-  on = self: flagName: self.match (flagRe flagName);
-  off = self: flagName: self.matchNot (flagRe flagName);
-
+  on = self: flag: self.filter (lib.hasInfix "+${flag}");
+  off = self: flag: self.filterNot (lib.hasInfix "+${flag}");
   exclusive = self: onFlag: offFlag: lib.pipe self [
-    (self: self.on onFlag)
-    (self: self.off offFlag)
+    (self: on self onFlag)
+    (self: off self offFlag)
   ];
 in
 {
