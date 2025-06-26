@@ -110,6 +110,9 @@ let
 
             # Applies empty (for already path-configured trees)
             result = (self f) [ ];
+
+            # returns the original empty state
+            new = callable;
           };
       };
     in

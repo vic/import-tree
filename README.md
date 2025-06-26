@@ -292,6 +292,11 @@ import-tree.pipeTo lib.id # equivalent to  `.leafs`
 import-tree.leafs
 ```
 
+### `import-tree.new`
+
+Returns a fresh import-tree with empty state. If you previously had any path, lib, filter, etc,
+you might need to set them on the new empty tree.
+
 ### `import-tree.result`
 
 Exactly the same as calling the import-tree object with an empty list `[ ]`.

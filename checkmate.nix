@@ -113,6 +113,18 @@ in
           ];
         };
 
+        reset."test `new` returns a clear state" = {
+          expr = lib.pipe lit [
+            (i: i.addPath ./tree/x)
+            (i: i.addPath ./tree/a/b)
+            (i: i.new)
+            (i: i.addPath ./tree/modules/hello-world)
+            (i: i.withLib lib)
+            (i: i.leafs.result)
+          ];
+          expected = [ ./tree/modules/hello-world/mod.nix ];
+        };
+
         addAPI."test extends the API available on an import-tree object" = {
           expr =
             let
