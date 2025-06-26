@@ -138,7 +138,7 @@ in
           expected = 1;
         };
 
-        import-tree."test does not breaks if given a path to a file instead of a directory." = {
+        import-tree."test does not break if given a path to a file instead of a directory." = {
           expr = lit.leafs ./tree/x/y.nix;
           expected = [ ./tree/x/y.nix ];
         };
