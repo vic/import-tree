@@ -29,7 +29,14 @@ let
         lib: root:
         let
           initialFilter = andNot (lib.hasInfix "/_") (lib.hasSuffix ".nix");
-          listFilesRecursive = x: if isImportTree x then treeFiles x else lib.filesystem.listFilesRecursive x;
+          listFilesRecursive =
+            x:
+            if isImportTree x then
+              treeFiles x
+            else if lib.pathIsDirectory x then
+              lib.filesystem.listFilesRecursive x
+            else
+              [ x ];
           treeFiles = t: (t.withLib lib).leafs.result;
         in
         lib.pipe
