@@ -36,7 +36,7 @@ let
             else if lib.pathIsDirectory x then
               lib.filesystem.listFilesRecursive x
             else
-              [x];
+              [ x ];
           treeFiles = t: (t.withLib lib).leafs.result;
         in
         lib.pipe
