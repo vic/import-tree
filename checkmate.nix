@@ -138,6 +138,11 @@ in
           expected = 1;
         };
 
+        import-tree."test does not breaks if given a path to a file instead of a directory." = {
+          expr = lit.leafs ./tree/x/y.nix;
+          expected = [ ./tree/x/y.nix ];
+        };
+
         import-tree."test returns a module with a single imported nested module having leafs" = {
           expr =
             let
