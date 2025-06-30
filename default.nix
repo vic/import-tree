@@ -88,8 +88,9 @@ let
           self: f:
           let
             __config = (f self);
+            boundAPI = builtins.mapAttrs (_: g: g (self f)) __config.api;
           in
-          __config.api
+          boundAPI
           // {
             inherit __config;
             __functor = functor;
@@ -101,7 +102,7 @@ let
             matchNot = regex: self (c: mapAttr (f c) "filterf" (andNot (matchesRegex regex)));
             map = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
             addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
-            addAPI = api: self (c: mapAttr (f c) "api" (a: a // builtins.mapAttrs (_: g: g (self f)) api));
+            addAPI = api: self (c: mapAttr (f c) "api" (a: a // api));
 
             # Configuration updates (non-accumulating)
             withLib = lib: self (c: (f c) // { inherit lib; });
