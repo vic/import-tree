@@ -145,6 +145,16 @@ in
           expected = [ ./tree/modules/hello-option/mod.nix ];
         };
 
+        addAPI."test API extensions are late bound" = {
+          expr =
+            let
+              first = lit.addAPI { res = self: self.late; };
+              extended = first.addAPI { late = _self: "hello"; };
+            in
+            extended.res;
+          expected = "hello";
+        };
+
         pipeTo."test pipes list into a function" = {
           expr = (lit.map lib.pathType).pipeTo (lib.length) ./tree/x;
           expected = 1;
