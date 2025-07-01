@@ -35,11 +35,13 @@ let
               treeFiles x
             else if hasOutPath x then
               listFilesRecursive x.outPath
-            else if lib.pathIsDirectory x then
+            else if isDirectory x then
               lib.filesystem.listFilesRecursive x
             else
               [ x ];
           treeFiles = t: (t.withLib lib).leafs.result;
+          pathFilter = compose (and filterf initialFilter) toString;
+          filter = x: if isPathLike x then pathFilter x else filterf x;
         in
         lib.pipe
           [ paths root ]
@@ -47,7 +49,7 @@ let
             (lib.lists.flatten)
             (map listFilesRecursive)
             (lib.lists.flatten)
-            (builtins.filter (compose (and filterf initialFilter) toString))
+            (builtins.filter filter)
             (map mapf)
           ];
 
@@ -70,6 +72,10 @@ let
   mapAttr =
     attrs: k: f:
     attrs // { ${k} = f attrs.${k}; };
+
+  isDirectory = and (x: builtins.readFileType x == "directory") isPathLike;
+
+  isPathLike = x: builtins.isPath x || builtins.isString x || hasOutPath x;
 
   hasOutPath = and (x: x ? outPath) builtins.isAttrs;
 
