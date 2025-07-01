@@ -1,446 +1,471 @@
 # 🌲🌴 import-tree 🎄🌳
 
-> Helper functions for import of [Nixpkgs module system](https://nix.dev/tutorials/module-system/) modules under a directory recursively
+> **Powerful and extensible helper for importing [Nixpkgs module system](https://nix.dev/tutorials/module-system/) modules from directory trees**
 
-- Flake callable; Easy to use, intuitive for the most common use case: `inputs.import-tree ./modules`
-- Module class agnostic; can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
-- Can be used outside flakes as a dependencies-free lib; Just import our `./default.nix`.
-- Can be used to list other file types, not just `.nix`. See `.initFilter`, `.files` API.
-- Extensible API. import-tree objects are customizable. See `.addAPI`.
+[![Build Status](https://github.com/vic/import-tree/actions/workflows/test.yml/badge.svg)](https://github.com/vic/import-tree/actions/workflows/test.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## Quick Usage (with flake-parts)
 
-This example shows how to load all nix files inside `./modules`, following the
-[Dendritic Pattern](https://github.com/mightyiam/dendritic)
+**import-tree** simplifies the management of Nix module collections by automatically discovering and importing `.nix` files from directory structures. Whether you're organizing NixOS configurations, home-manager setups, or flake-parts modules, import-tree provides an intuitive and extensible API to streamline your module imports.
+
+Perfect for implementing the [Dendritic Pattern](https://github.com/mightyiam/dendritic) where each file represents a discrete, composable module, making your Nix configurations more modular and maintainable.
 
 ```nix
 {
-  inputs.import-tree.url = "github:vic/import-tree";
-  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+  inputs = {
+    import-tree.url = "github:vic/import-tree";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+  };
 
-  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
+  outputs = inputs: 
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } 
+      # This imports all .nix files from ./modules recursively
+      (inputs.import-tree ./modules);
 }
 ```
 
-## Quick Usage (outside a modules evaluation)
+By default, any path containing `/_` is ignored.
 
-If you want to get a list of nix files programmatically outside of a modules evaluation,
-you can use the import-tree API (read below for more).
+## Understanding the Default Behavior
 
-```nix
-(import-tree.withLib pkgs.lib).leafs ./modules # => list of .nix files
-```
+### File Discovery
 
-## Ignored files
+By default, import-tree:
+- **Recursively scans** directories for `.nix` files
+- **Ignores paths** containing components that start with underscore (`/_`)
+- **Returns a module** that imports all discovered files
 
-By default, paths having a component that begins with an underscore (`/_`) are ignored.
+### Default Ignore Pattern
 
-This can be changed by using `.initFilter` API.
+Files and directories starting with underscore are ignored by default:
+- `_private.nix` ❌ (ignored)
+- `modules/_internal/config.nix` ❌ (ignored)
+- `modules/public.nix` ✅ (included)
+
+This convention allows you to keep private/internal files alongside public modules without accidentally importing them.
+
+
 
 <details>
-  <summary>
+<summary>
+🔍🥦 Explore more.
 
-## API usage
-
-The following goes recursively through `./modules` and imports all `.nix` files.
-
-```nix
-# Usage as part of any nix module system.
-{config, ...} {
-  imports = [  (import-tree ./modules)  ];
-}
-```
-
-For more advanced usage, `import-tree` can be configured via its extensible API.
-
+> Advanced Features: filters, transforms, list other file types, extensible API.
 </summary>
 
-## Obtaining the API
+- [Features at a Glance](#features-at-a-glance)
+- [Quick Start](#quick-start)
+  - [For Flake Users](#for-flake-users)
+  - [For Non-Flake Users](#for-non-flake-users)
+  - [Basic Usage in Module Systems](#basic-usage-in-module-systems)
+- [Understanding the Default Behavior](#understanding-the-default-behavior)
+  - [File Discovery](#file-discovery)
+  - [Default Ignore Pattern](#default-ignore-pattern)
+- [Advanced Usage & API](#advanced-usage--api)
+  - [Filtering Files](#filtering-files)
+  - [Using Regular Expressions](#using-regular-expressions)
+  - [Transforming Files](#transforming-files)
+  - [Working with File Lists](#working-with-file-lists)
+  - [Pre-configuring Paths](#pre-configuring-paths)
+  - [Custom API Extensions](#custom-api-extensions)
+- [Why Use import-tree?](#why-use-import-tree)
+  - [The Dendritic Pattern](#the-dendritic-pattern)
+  - [Library Distribution & Community Configurations](#library-distribution--community-configurations)
+- [API Reference](#api-reference)
+  - [Core Methods](#core-methods)
+  - [Configuration Methods](#configuration-methods)
+  - [Extension Methods](#extension-methods)
+  - [Output Methods](#output-methods)
+- [Testing](#testing)
+  - [Running Tests](#running-tests)
+  - [Test Structure](#test-structure)
+- [Contributing](#contributing)
+  - [Development Setup](#development-setup)
+  - [Making Changes](#making-changes)
+  - [Submitting Contributions](#submitting-contributions)
+- [License](#license)
 
-When used as a flake, the flake outputs attrset is the primary callable.
-Otherwise, importing the `default.nix` that is at the root of this repository will evaluate into the same attrset.
-This callable attrset is referred to as `import-tree` in this documentation.
 
-## `import-tree`
+## Features at a Glance
 
-Takes a single argument: path or deeply nested list of path.
-Returns a module that imports the discovered files.
-For example, given the following file tree:
+### 🚀 **Easy to Use**
+- **One-liner imports**: `inputs.import-tree ./modules` for the most common use case
+- **Flake-ready**: Works seamlessly with modern Nix flakes
+- **Zero dependencies**: Can be used outside flakes by importing `./default.nix`
 
-```
-default.nix
-modules/
-  a.nix
-  subdir/
-    b.nix
-```
+### 🎯 **Universal Compatibility**
+- **Module system agnostic**: Works with NixOS, nix-darwin, home-manager, flake-parts, NixVim
+- **Path flexible**: Accepts files, directories, or nested lists of paths
+- **Mixed usage**: Can list other file types beyond `.nix` files
 
-The following
+### 🔧 **Highly Customizable**
+- **Extensible API**: Add custom methods with `.addAPI`
+- **Smart filtering**: Built-in filters with customizable patterns
+- **Transformation support**: Map functions over discovered files
+- **Ignore patterns**: Sensible defaults with full customization
+
+### 📦 **Library-Friendly**
+- **Pre-configured trees**: Library authors can ship ready-to-use configurations
+- **Community conventions**: Support for domain-specific naming and organization patterns
+- **API composition**: Chain and combine multiple import-tree instances
+
+## Quick Start
+
+### For Flake Users
+
+The simplest way to use import-tree with flake-parts to import all modules from a directory:
 
 ```nix
-{lib, config, ...} {
-  imports = [ (import-tree ./modules) ];
+{
+  inputs = {
+    import-tree.url = "github:vic/import-tree";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+  };
+
+  outputs = inputs: 
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } 
+      # This imports all .nix files from ./modules recursively
+      (inputs.import-tree ./modules);
 }
 ```
 
-Is similar to
+### For Non-Flake Users
+
+You can use import-tree in traditional Nix setups by importing the library directly:
 
 ```nix
-{lib, config, ...} {
+let
+  # Import the library
+  import-tree = import (pkgs.fetchzip {
+    url = "https://github.com/vic/import-tree/archive/refs/heads/main.zip";
+    hash = ""; # TODO
+  });
+  
+  # importable module.
+  module = import-tree ./modules;
+in
+{
+  # Use in any module system
+  imports = [ module ];
+}
+```
+
+## The import-tree callable
+
+An import-tree callable takes a single argument:
+
+- A path to a directory containing files to be discovered.
+- Any *path-like*: String, { outPath = "/some/path"; }.
+- Another import-tree with predefined search paths. See `.addPath`.
+- A nested list of these.
+
+## Advanced Usage & API
+
+### Filtering Files
+
+Control which files are imported using the `.filter` method:
+
+```nix
+# Only import files containing "feature" in their path
+import-tree.filter (lib.hasInfix "feature") ./modules
+
+# Chain multiple filters (all must match)
+lib.pipe import-tree [
+  (i: i.filter (lib.hasInfix "desktop"))
+  (i: i.filter (lib.hasSuffix "default.nix"))
+  (i: i ./modules)
+]
+```
+
+### Using Regular Expressions
+
+Use `.match` for more complex pattern matching:
+
+```nix
+# Import files matching specific patterns
+import-tree.match ".*/desktop@(gnome|kde)\.nix" ./modules
+```
+
+### Transforming Files
+
+Use `.map` to transform paths before importing:
+
+```nix
+# Add debugging information to each import
+import-tree.map (path: {
+  imports = [ path ];
+  # e.g, If we had an `_importedPaths` (listOf str) option, you can
+  # track which files were automatically imported:
+  _importedPaths = [ (toString path) ];
+}) ./modules
+```
+
+### Working with File Lists
+
+Get the list of discovered files without importing them:
+
+```nix
+# Get list of .nix files (remember to use withLib for non-module contexts)
+nixFiles = (import-tree.withLib lib).files ./modules;
+
+# Process non-Nix files
+cssFiles = lib.pipe import-tree [
+  (i: i.initFilter (lib.hasSuffix ".css"))  # Look for .css files
+  (i: i.withLib lib)                        # Required for .files
+  (i: i.files ./src)                        # Get the file list
+];
+```
+
+### Pre-configuring Paths
+
+Use `.addPath` to create import-tree instances with predefined search paths:
+
+```nix
+# Create a configured tree
+myTree = import-tree.addPath ./modules;
+
+# Use it with empty arguments or additional paths
+config = {
   imports = [
-    {
-      imports = [
-        ./modules/a.nix
-        ./modules/subdir/b.nix
-      ];
-    }
+    myTree.result              # Same as: myTree []
+    (myTree ./extra-modules)   # Includes both ./modules and ./extra-modules
+  ];
+};
+```
+
+### Custom API Extensions
+
+Create domain-specific APIs using `.addAPI`:
+
+```nix
+# Define a custom API for feature management
+featureTree = import-tree.addAPI {
+  # Method to get all available features
+  all = self: self.addPath ./features;
+  
+  # Method to enable specific features
+  enable = self: featureName: 
+    self.all.filter (lib.hasInfix "+${featureName}");
+  
+  # Method for minimal feature set
+  minimal = self: self.enable "minimal";
+  
+  # Method for desktop features
+  desktop = self: self.enable "desktop";
+};
+
+# Usage:
+{
+  imports = [
+    featureTree.minimal    # Only minimal features
+    featureTree.desktop    # Only desktop features
   ];
 }
 ```
 
-If given a deeply nested list of paths the list will be flattened and results concatenated.
-The following is valid usage:
+## Why Use import-tree?
+
+### The Dendritic Pattern
+
+import-tree was inspired by the [Dendritic Pattern](https://github.com/mightyiam/dendritic), a modular approach where each file represents a focused, composable module. [This pattern offers several advantages](https://vic.github.io/dendrix/Dendritic.html):
+
+- **Better organization**: Each file has a single responsibility
+- **Easier maintenance**: Changes are isolated to specific files
+- **Improved reusability**: Modules can be easily shared across configurations
+
+Learn more from:
+- [@mightyiam's original post](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271)
+- [@drupol's practical experience](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/)
+- [@vic's implementation insights](https://discourse.nixos.org/t/how-do-you-structure-your-nixos-configs/65851/8)
+
+### Library Distribution & Community Configurations
+
+The extensible API enables library authors to create [domain-specific import-tree configurations](https://vic.github.io/dendrix/Dendrix-Trees.html), similar to popular editor distributions (like Spacemacs or LazyVim).
+
+#### Example: Editor Configuration Distribution
 
 ```nix
-{lib, config, ...} {
-  imports = [ (import-tree [./a [./b]]) ];
-}
-```
-
-Other import-tree objects can also be given as arguments (or in lists) as if they were paths.
-
-As an special case, when the single argument given to an `import-tree` object is an
-attribute-set containing an `options` attribute, the `import-tree` object
-assumes it is being evaluated as a module. This way, a pre-configured `import-tree` can
-also be used directly in a list of module imports.
-
-This is useful for authors exposing pre-configured `import-tree`s that users can directly
-add to their import list or continue configuring themselves using its API.
-
-```nix
-let
-  # imagine this configured tree comes from some author's flake or library.
-  # library author can extend an import-tree with custom API methods
-  # according to the library's directory and file naming conventions.
-  configured-tree = import-tree.addAPI {
-    # the knowledge of where modules are located inside the library structure
-    # or which filters/regexes/transformations to apply are abstracted 
-    # from the user by the author providing a meaningful API.
-    maximal = self: self.addPath ./modules;
-    minimal = self: self.maximal.filter (lib.hasInfix "minimal");
-  };
+# editor-distro's flake output
+{ inputs, lib, ... }:
+let 
+  # Pre-configured import-tree with editor-specific API
+  modules-tree = lib.pipe inputs.import-tree [
+    (i: i.addPath ./modules)
+    (i: i.addAPI { 
+      # Language-specific features
+      ruby = self: self.filter (lib.hasInfix "+ruby");
+      python = self: self.filter (lib.hasInfix "+python");
+      
+      # Editor preferences  
+      vim = self: self.filter (lib.hasInfix "+vim");
+      emacs = self: self.filter (lib.hasInfix "+emacs");
+      
+      # Feature toggles
+      minimal = self: self.filterNot (lib.hasInfix "+bloat");
+      ai-assist = self: self.filter (lib.hasInfix "+copilot");
+    })
+  ];
 in {
-  # the library user can directly import or further configure an import-tree.
-  imports = [ configured-tree.minimal ];
+  lib = { inherit modules-tree; };
 }
 ```
 
-## Configurable behavior
-
-`import-tree` objects with custom behavior can be obtained using a builder pattern.
-For example:
+#### Using Distributed Configurations
 
 ```nix
-lib.pipe import-tree [
-  (i: i.map lib.traceVal) # trace all paths. useful for debugging what is being imported.
-  (i: i.filter (lib.hasInfix ".mod.")) # filter nix files by some predicate
-  (i: i ./modules) # finally, call the configured import-tree with a path
-]
-```
-
-Here is a simpler but less readable equivalent:
-
-```nix
-((import-tree.map lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
-```
-
-### `import-tree.filter` and `import-tree.filterNot`
-
-`filter` takes a predicate function `path -> bool`. Only paths for which the filter returns `true` are selected:
-
-> \[!NOTE\]
-> Only files with suffix `.nix` are candidates.
-
-```nix
-# import-tree.filter : (path -> bool) -> import-tree
-
-import-tree.filter (lib.hasInfix ".mod.") ./some-dir
-```
-
-`filter` can be applied multiple times, in which case only the files matching _all_ filters will be selected:
-
-```nix
-lib.pipe import-tree [
-  (i: i.filter (lib.hasInfix ".mod."))
-  (i: i.filter (lib.hasSuffix "default.nix"))
-  (i: i ./some-dir)
-]
-```
-
-Or, in a simpler but less readable way:
-
-```nix
-(import-tree.filter (lib.hasInfix ".mod.")).filter (lib.hasSuffix "default.nix") ./some-dir
-```
-
-See also `import-tree.initFilter`.
-
-### `import-tree.match` and `import-tree.matchNot`
-
-`match` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
-
-```nix
-# import-tree.match : regex -> import-tree
-
-import-tree.match ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
-```
-
-`match` can be applied multiple times, in which case only the paths matching _all_ regex patterns will be selected, and can be combined with any number of `filter`, in any order.
-
-### `import-tree.map`
-
-`map` can be used to transform each path by providing a function.
-
-e.g. to convert the path into a module explicitly:
-
-```nix
-# import-tree.map : (path -> any) -> import-tree
-
-import-tree.map (path: {
-  imports = [ path ];
-  # assuming such an option is declared
-  automaticallyImportedPaths = [ path ];
-})
-```
-
-`map` can be applied multiple times, composing the transformations:
-
-```nix
-lib.pipe import-tree [
-  (i: i.map (lib.removeSuffix ".nix"))
-  (i: i.map builtins.stringLength)
-] ./some-dir
-```
-
-The above example first removes the `.nix` suffix from all selected paths, then takes their lengths.
-
-Or, in a simpler but less readable way:
-
-```nix
-((import-tree.map (lib.removeSuffix ".nix")).map builtins.stringLength) ./some-dir
-```
-
-`map` can be combined with any number of `filter` and `match` calls, in any order, but the (composed) transformation is applied _after_ the filters, and only to the paths that match all of them.
-
-### `import-tree.addPath`
-
-`addPath` can be used to prepend paths to be filter as a setup for import-tree.
-This function can be applied multiple times.
-
-```nix
-# import-tree.addPath : (path_or_list_of_paths) -> import-tree
-
-# Both of these result in the same imported files.
-# however, the first adds ./vendor as a *pre-configured* path.
-# and the final user can supply ./modules or [] empty.
-(import-tree.addPath ./vendor) ./modules
-import-tree [./vendor ./modules]
-```
-
-### `import-tree.addAPI`
-
-`addAPI` extends the current import-tree object with new methods.
-The API is cumulative, meaning that this function can be called multiple times.
-
-`addAPI` takes an attribute set of functions taking a single argument:
-`self` which is the current import-tree object.
-
-```nix
-# import-tree.addAPI : api-attr-set -> import-tree
-
-import-tree.addAPI {
-  maximal = self: self.addPath ./modules;
-  feature = self: featureName: self.maximal.filter (lib.hasInfix feature);
-  minimal = self: self.feature "minimal";
+# Consumer flake
+{ inputs, ... }:
+let
+  editor = inputs.editor-distro.lib.modules-tree;
+in {
+  imports = [
+    # Compose features declaratively
+    editor.vim.ruby.minimal
+    
+    # Mix and match as needed
+    editor.python.ai-assist
+  ];
 }
 ```
 
-on the previous API, users can call `import-tree.feature "+vim"` or `import-tree.minimal`, etc.
-
-### `import-tree.withLib`
-
-> \[!NOTE\]
-> `withLib` is required prior to invocation of any of `.leafs` or `.pipeTo`.
-> Because with the use of those functions the implementation does not have access to a `lib` that is provided as a module argument.
-
-```nix
-# import-tree.withLib : lib -> import-tree
-
-import-tree.withLib pkgs.lib
-```
-
-### `import-tree.pipeTo`
-
-`pipeTo` takes a function that will receive the list of paths.
-When configured with this, `import-tree` will not return a nix module but the result of the function being piped to.
-
-```nix
-# import-tree.pipeTo : ([paths] -> any) -> import-tree
-
-import-tree.pipeTo lib.id # equivalent to  `.leafs`
-```
-
-### `import-tree.leafs`
-
-`leafs` takes no arguments, it is equivalent to calling `import-tree.pipeTo lib.id`. That is, instead of producing a nix module, just return the list of results.
-
-```nix
-# import-tree.leafs : import-tree
-
-import-tree.leafs
-```
-
-### `import-tree.new`
-
-Returns a fresh import-tree with empty state. If you previously had any path, lib, filter, etc,
-you might need to set them on the new empty tree.
-
-### `import-tree.initFilter`
-
-*Replaces* the initial filter which defaults to: Include files with `.nix` suffix and not having `/_` infix.
-
-_NOTE_: initFilter is non-accumulating and is the *first* filter to run before those accumulated via `filter`/`match`.
-
-You can use this to make import-tree scan for other file types or change the ignore convention.
-
-```nix
-# import-tree.initFilter : (path -> bool) -> import-tree
-
-import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/ignored/") # nix files not inside /ignored/
-import-tree.initFilter (lib.hasSuffix ".md")  # scan for .md files everywhere, nothing ignored.
-```
-
-### `import-tree.files`
-
-A shorthand for `import-tree.leafs.result`. Returns a list of matching files.
-
-This can be used when you don't want to import the tree, but just get a list of files from it.
-
-Useful for listing files other than `.nix`, for example, for passing all `.js` files to a minifier:
-
-_TIP_: remember to use `withLib` when *not* using import-tree as a module import.
-
-```nix
-# import-tree.files : [ <list-of-files> ]
-
-# paths to give to uglify-js
-lib.pipe import-tree [
-  (i: i.initFilter (lib.hasSuffix ".js")) # look for .js files. ignore nothing.
-  (i: i.addPath ./out) # under the typescript compiler outDir
-  (i: i.withLib lib) # set lib since we are not importing modules.
-  (i: i.files)
-]
-# => list of all .js files
-```
-
-### `import-tree.result`
-
-Exactly the same as calling the import-tree object with an empty list `[ ]`.
-This is useful for import-tree objects that already have paths configured via `.addPath`.
-
-```nix
-# import-tree.result : <module-or-piped-result>
-
-# these two are exactly the same:
-(import-tree.addPath ./modules).result
-(import-tree.addPath ./modules) [ ]
-```
+This approach enables community-driven configuration sharing while maintaining the flexibility to customize for specific needs.
 
 </details>
 
-## Why
-
-Importing a tree of nix modules has some advantages:
-
-### Dendritic Pattern: each file is a flake-parts module
-
-[That pattern](https://github.com/mightyiam/dendritic) was the original inspiration for this library.
-See [@mightyiam's post](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271),
-[@drupol's blog post](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/) and
-[@vic's reply](https://discourse.nixos.org/t/how-do-you-structure-your-nixos-configs/65851/8)
-to learn about the Dendritic pattern advantages.
-
-### Sharing pre-configured subtrees of modules
 
 <details>
 <summary>
 
-Since the import-tree API is _extensible_ and lets you add paths or
-filters at configuration time, configuration-library authors can
-provide custom import-tree instances with an API suited for their
-particular idioms.
-
-@vic is using this on [Dendrix](https://github.com/vic/dendrix) for [community conventions](https://github.com/vic/dendrix/blob/main/dev/modules/community/_pipeline.nix) on tagging files.
-
+## API Reference
 </summary>
 
-This would allow us to have community-driven *sets* of configurations,
-much like those popular for editors: spacemacs/lazy-vim distributions.
+### Core Methods
 
-Imagine an editor distribution exposing the following flake output:
+#### `import-tree <path|paths>`
+**Primary function**: Takes paths and returns a module that imports discovered files.
 
 ```nix
-# editor-distro's flakeModule
-{inputs, lib, ...}:
-let 
-  flake.lib.modules-tree = lib.pipe inputs.import-tree [
-    (i: i.addPath ./modules)
-    (i: i.addAPI { inherit on off exclusive; })
-    (i: i.addAPI { ruby = self: self.on "ruby"; })
-    (i: i.addAPI { python = self: self.on "python"; })
-    (i: i.addAPI { old-school = self: self.off "copilot"; })
-    (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
-  ];
+# Single path
+import-tree ./modules
 
-  on = self: flag: self.filter (lib.hasInfix "+${flag}");
-  off = self: flag: self.filterNot (lib.hasInfix "+${flag}");
-  exclusive = self: onFlag: offFlag: lib.pipe self [
-    (self: on self onFlag)
-    (self: off self offFlag)
-  ];
-in
-{
-  inherit flake;
+# Multiple paths  
+import-tree [ ./modules ./features ]
+
+# Nested paths (flattened automatically)
+import-tree [ ./modules [ ./features ./plugins ] ]
+```
+
+### Configuration Methods
+
+#### `.filter <predicate>`
+**Filter files** by a predicate function `path -> bool`.
+
+```nix
+import-tree.filter (lib.hasInfix "desktop") ./modules
+```
+
+#### `.filterNot <predicate>`
+**Exclude files** matching the predicate.
+
+```nix
+import-tree.filterNot (lib.hasInfix "experimental") ./modules
+```
+
+#### `.match <regex>`
+**Filter by regex** pattern (uses `builtins.match`).
+
+```nix
+import-tree.match ".*/feature-[a-z]+\.nix" ./modules
+```
+
+#### `.map <function>`
+**Transform each path** with a function `path -> any`.
+
+```nix
+import-tree.map (path: { imports = [ path ]; source = toString path; })
+```
+
+#### `.addPath <path>`
+**Add paths** to be searched (accumulates with multiple calls).
+
+```nix
+(import-tree.addPath ./base).addPath ./extras
+```
+
+#### `.initFilter <predicate>`
+**Replace the initial filter** (default: `.nix` files, ignore `/_` paths).
+
+```nix
+# Look for .md files instead
+import-tree.initFilter (lib.hasSuffix ".md")
+
+# Custom ignore pattern
+import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/private/")
+```
+
+### Extension Methods
+
+#### `.addAPI <attrset>`
+**Extend the API** with custom methods.
+
+```nix
+import-tree.addAPI {
+  stable = self: self.filter (lib.hasInfix "stable");
+  beta = self: self.filter (lib.hasInfix "beta");
 }
 ```
 
-Users of such distribution can do:
+#### `.withLib <lib>`
+**Provide lib instance** (required for `.files`, `.leafs`, `.pipeTo` methods).
 
 ```nix
-# consumer flakeModule
-{inputs, lib, ...}: let
-  ed-tree = inputs.editor-distro.lib.modules-tree;
-in {
-  imports = [
-    (ed-tree.vim-btw.old-school.on "rust")
-  ];
-}
+import-tree.withLib pkgs.lib
 ```
 
+### Output Methods
+
+#### `.files`
+**Get list of matching files** instead of importing them.
+
+```nix
+(import-tree.withLib lib).files ./modules
+# => [ /path/to/modules/a.nix /path/to/modules/b.nix ]
+```
+
+#### `.result`
+**Apply configured tree** with empty path list (useful for pre-configured trees).
+
+```nix
+(import-tree.addPath ./modules).result
+# Same as: (import-tree.addPath ./modules) []
+```
+
+#### `.pipeTo <function>`
+**Process file list** with a custom function.
+
+```nix
+import-tree.pipeTo (files: lib.length files) ./modules
+# => number of discovered files
+```
+
+#### `.new`
+**Create fresh instance** with empty configuration.
+
+```nix
+import-tree.addPath ./modules).new.addPath ./other
+# Only includes ./other (previous config cleared)
+```
 </details>
 
 ## Testing
 
-`import-tree` uses [`checkmate`](https://github.com/vic/checkmate) for testing.
+import-tree uses [checkmate](https://github.com/vic/checkmate) for testing.
 
-The test suite can be found in [`checkmate.nix`](checkmate.nix). To run it locally:
 
-```sh
+```bash
+# Run the full test suite
 nix flake check path:checkmate --override-input target path:.
-```
 
-Run the following to format files:
-
-```sh
+# Format code
 nix run github:vic/checkmate#fmt
 ```
