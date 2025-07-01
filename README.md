@@ -333,7 +333,14 @@ _TIP_: remember to use `withLib` when *not* using import-tree as a module import
 ```nix
 # import-tree.files : [ <list-of-files> ]
 
-((import-tree.withLib lib).initFilter (lib.hasSuffix ".js")).files # => list of all .js files
+# paths to give to uglify-js
+lib.pipe import-tree [
+  (i: i.initFilter (lib.hasSuffix ".js")) # look for .js files. ignore nothing.
+  (i: i.addPath ./out) # under the typescript compiler outDir
+  (i: i.withLib lib) # set lib since we are not importing modules.
+  (i: i.files)
+]
+# => list of all .js files
 ```
 
 ### `import-tree.result`
