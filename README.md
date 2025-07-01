@@ -2,7 +2,11 @@
 
 > Helper functions for import of [Nixpkgs module system](https://nix.dev/tutorials/module-system/) modules under a directory recursively
 
-Module class agnostic; can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
+- Flake callable; Easy to use, intuitive for the most common use case: `inputs.import-tree ./modules`
+- Module class agnostic; can be used for NixOS, nix-darwin, home-manager, flake-parts, NixVim.
+- Can be used outside flakes as a dependencies-free lib; Just import our `./default.nix`.
+- Can be used to list other file types, not just `.nix`. See `.initFilter`, `.files` API.
+- Extensible API. import-tree objects are customizable. See `.addAPI`.
 
 ## Quick Usage (with flake-parts)
 
@@ -29,7 +33,9 @@ you can use the import-tree API (read below for more).
 
 ## Ignored files
 
-Paths that have a component that begins with an underscore are ignored.
+By default, paths having a component that begins with an underscore (`/_`) are ignored.
+
+This can be changed by using `.initFilter` API.
 
 <details>
   <summary>
@@ -177,6 +183,8 @@ Or, in a simpler but less readable way:
 (import-tree.filter (lib.hasInfix ".mod.")).filter (lib.hasSuffix "default.nix") ./some-dir
 ```
 
+See also `import-tree.initFilter`.
+
 ### `import-tree.match` and `import-tree.matchNot`
 
 `match` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
@@ -296,6 +304,37 @@ import-tree.leafs
 
 Returns a fresh import-tree with empty state. If you previously had any path, lib, filter, etc,
 you might need to set them on the new empty tree.
+
+### `import-tree.initFilter`
+
+*Replaces* the initial filter which defaults to: Include files with `.nix` suffix and not having `/_` infix.
+
+_NOTE_: initFilter is non-accumulating and is the *first* filter to run before those accumulated via `filter`/`match`.
+
+You can use this to make import-tree scan for other file types or change the ignore convention.
+
+```nix
+# import-tree.initFilter : (path -> bool) -> import-tree
+
+import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/ignored/") # nix files not inside /ignored/
+import-tree.initFilter (lib.hasSuffix ".md")  # scan for .md files everywhere, nothing ignored.
+```
+
+### `import-tree.files`
+
+A shorthand for `import-tree.leafs.result`. Returns a list of matching files.
+
+This can be used when you dont want to import the tree, but just get a list of files from it.
+
+Useful for listing files other than `.nix`, for example, for passing all `.js` files to a minifier:
+
+_TIP_: remember to use `withLib` when *not* using import-tree as a module import.
+
+```nix
+# import-tree.files : [ <list-of-files> ]
+
+((import-tree.withLib lib).initFilter (lib.hasSuffix ".js")).files # => list of all .js files
+```
 
 ### `import-tree.result`
 
