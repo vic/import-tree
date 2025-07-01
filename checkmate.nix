@@ -92,12 +92,12 @@ in
         };
 
         addPath."test `addPath` prepends a path to filter" = {
-          expr = (lit.addPath ./tree/x).leafs.result;
+          expr = (lit.addPath ./tree/x).files;
           expected = [ ./tree/x/y.nix ];
         };
 
         addPath."test `addPath` can be called multiple times" = {
-          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs.result;
+          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).files;
           expected = [
             ./tree/x/y.nix
             ./tree/a/b/b_a.nix
@@ -106,23 +106,48 @@ in
         };
 
         addPath."test `addPath` identity" = {
-          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).leafs.result;
+          expr = ((lit.addPath ./tree/x).addPath ./tree/a/b).files;
           expected = lit.leafs [
             ./tree/x
             ./tree/a/b
           ];
         };
 
-        reset."test `new` returns a clear state" = {
+        new."test `new` returns a clear state" = {
           expr = lib.pipe lit [
             (i: i.addPath ./tree/x)
             (i: i.addPath ./tree/a/b)
             (i: i.new)
             (i: i.addPath ./tree/modules/hello-world)
             (i: i.withLib lib)
-            (i: i.leafs.result)
+            (i: i.files)
           ];
           expected = [ ./tree/modules/hello-world/mod.nix ];
+        };
+
+        initFilter."test can change the initial filter to look for other file types" = {
+          expr = (lit.initFilter (p: lib.hasSuffix ".txt" p)).leafs [ ./tree/a ];
+          expected = [ ./tree/a/a.txt ];
+        };
+
+        initFilter."test initf does filter non-paths" = {
+          expr =
+            let
+              mod = (it.initFilter (x: !(x ? config.boom))) [
+                {
+                  options.hello = lib.mkOption {
+                    default = "world";
+                    type = lib.types.str;
+                  };
+                }
+                {
+                  config.boom = "boom";
+                }
+              ];
+              res = lib.modules.evalModules { modules = [ mod ]; };
+            in
+            res.config.hello;
+          expected = "world";
         };
 
         addAPI."test extends the API available on an import-tree object" = {
@@ -130,7 +155,7 @@ in
             let
               extended = lit.addAPI { helloOption = self: self.addPath ./tree/modules/hello-option; };
             in
-            extended.helloOption.leafs.result;
+            extended.helloOption.files;
           expected = [ ./tree/modules/hello-option/mod.nix ];
         };
 
@@ -139,7 +164,7 @@ in
             let
               first = lit.addAPI { helloOption = self: self.addPath ./tree/modules/hello-option; };
               second = first.addAPI { helloWorld = self: self.addPath ./tree/modules/hello-world; };
-              extended = second.addAPI { res = self: self.helloOption.leafs.result; };
+              extended = second.addAPI { res = self: self.helloOption.files; };
             in
             extended.res;
           expected = [ ./tree/modules/hello-option/mod.nix ];

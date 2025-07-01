@@ -3,6 +3,7 @@ let
     {
       lib ? null,
       pipef ? null,
+      initf ? null,
       filterf,
       mapf,
       paths,
@@ -28,7 +29,7 @@ let
       leafs =
         lib: root:
         let
-          initialFilter = andNot (lib.hasInfix "/_") (lib.hasSuffix ".nix");
+          treeFiles = t: (t.withLib lib).files;
           listFilesRecursive =
             x:
             if isImportTree x then
@@ -39,9 +40,11 @@ let
               lib.filesystem.listFilesRecursive x
             else
               [ x ];
-          treeFiles = t: (t.withLib lib).leafs.result;
+          nixFilter = andNot (lib.hasInfix "/_") (lib.hasSuffix ".nix");
+          initialFilter = if initf != null then initf else nixFilter;
           pathFilter = compose (and filterf initialFilter) toString;
-          filter = x: if isPathLike x then pathFilter x else filterf x;
+          otherFilter = and filterf (if initf != null then initf else (_: true));
+          filter = x: if isPathLike x then pathFilter x else otherFilter x;
         in
         lib.pipe
           [ paths root ]
@@ -118,11 +121,15 @@ let
 
             # Configuration updates (non-accumulating)
             withLib = lib: mergeAttrs { inherit lib; };
+            initFilter = initf: mergeAttrs { inherit initf; };
             pipeTo = pipef: mergeAttrs { inherit pipef; };
             leafs = mergeAttrs { pipef = (i: i); };
 
             # Applies empty (for already path-configured trees)
             result = (self f) [ ];
+
+            # Return a list of all filtered files.
+            files = (self f).leafs.result;
 
             # returns the original empty state
             new = callable;
