@@ -2,10 +2,10 @@ let
   perform =
     {
       lib ? null,
-      filterf ? null,
-      mapf ? null,
       pipef ? null,
-      paths ? [ ],
+      filterf,
+      mapf,
+      paths,
       ...
     }:
     path:
