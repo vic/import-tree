@@ -324,7 +324,7 @@ import-tree.initFilter (lib.hasSuffix ".md")  # scan for .md files everywhere, n
 
 A shorthand for `import-tree.leafs.result`. Returns a list of matching files.
 
-This can be used when you dont want to import the tree, but just get a list of files from it.
+This can be used when you don't want to import the tree, but just get a list of files from it.
 
 Useful for listing files other than `.nix`, for example, for passing all `.js` files to a minifier:
 
