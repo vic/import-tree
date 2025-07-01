@@ -99,6 +99,8 @@ let
           let
             __config = (f self);
             boundAPI = builtins.mapAttrs (_: g: g (self f)) __config.api;
+            accAttr = attrName: acc: self (c: mapAttr (f c) attrName acc);
+            mergeAttrs = attrs: self (c: (f c) // attrs);
           in
           boundAPI
           // {
@@ -106,18 +108,18 @@ let
             __functor = functor;
 
             # Configuration updates (accumulating)
-            filter = filterf: self (c: mapAttr (f c) "filterf" (and filterf));
-            filterNot = filterf: self (c: mapAttr (f c) "filterf" (andNot filterf));
-            match = regex: self (c: mapAttr (f c) "filterf" (and (matchesRegex regex)));
-            matchNot = regex: self (c: mapAttr (f c) "filterf" (andNot (matchesRegex regex)));
-            map = mapf: self (c: mapAttr (f c) "mapf" (compose mapf));
-            addPath = path: self (c: mapAttr (f c) "paths" (p: p ++ [ path ]));
-            addAPI = api: self (c: mapAttr (f c) "api" (a: a // api));
+            filter = filterf: accAttr "filterf" (and filterf);
+            filterNot = filterf: accAttr "filterf" (andNot filterf);
+            match = regex: accAttr "filterf" (and (matchesRegex regex));
+            matchNot = regex: accAttr "filterf" (andNot (matchesRegex regex));
+            map = mapf: accAttr "mapf" (compose mapf);
+            addPath = path: accAttr "paths" (p: p ++ [ path ]);
+            addAPI = api: accAttr "api" (a: a // api);
 
             # Configuration updates (non-accumulating)
-            withLib = lib: self (c: (f c) // { inherit lib; });
-            pipeTo = pipef: self (c: (f c) // { inherit pipef; });
-            leafs = self (c: (f c) // { pipef = (i: i); });
+            withLib = lib: mergeAttrs { inherit lib; };
+            pipeTo = pipef: mergeAttrs { inherit pipef; };
+            leafs = mergeAttrs { pipef = (i: i); };
 
             # Applies empty (for already path-configured trees)
             result = (self f) [ ];
