@@ -203,6 +203,23 @@ in
           expected = [ ./tree/modules/hello-world/mod.nix ];
         };
 
+        import-tree."test passes non-paths without string conversion" = {
+          expr =
+            let
+              mod = it [
+                {
+                  options.hello = lib.mkOption {
+                    default = "world";
+                    type = lib.types.str;
+                  };
+                }
+              ];
+              res = lib.modules.evalModules { modules = [ mod ]; };
+            in
+            res.config.hello;
+          expected = "world";
+        };
+
         import-tree."test can take other import-trees as if they were paths" = {
           expr = (lit.filter (lib.hasInfix "mod")).leafs [
             (it.addPath ./tree/modules/hello-option)
