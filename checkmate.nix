@@ -194,6 +194,15 @@ in
           expected = "world";
         };
 
+        import-tree."test take as arg anything path convertible" = {
+          expr = lit.leafs [
+            {
+              outPath = ./tree/modules/hello-world;
+            }
+          ];
+          expected = [ ./tree/modules/hello-world/mod.nix ];
+        };
+
         import-tree."test can take other import-trees as if they were paths" = {
           expr = (lit.filter (lib.hasInfix "mod")).leafs [
             (it.addPath ./tree/modules/hello-option)

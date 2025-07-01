@@ -33,6 +33,8 @@ let
             x:
             if isImportTree x then
               treeFiles x
+            else if hasOutPath x then
+              listFilesRecursive x.outPath
             else if lib.pathIsDirectory x then
               lib.filesystem.listFilesRecursive x
             else
@@ -68,6 +70,8 @@ let
   mapAttr =
     attrs: k: f:
     attrs // { ${k} = f attrs.${k}; };
+
+  hasOutPath = and (x: x ? outPath) builtins.isAttrs;
 
   isImportTree = and (x: x ? __config.__functor) builtins.isAttrs;
 
