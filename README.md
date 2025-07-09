@@ -7,11 +7,11 @@
 - Can be used outside flakes as a dependencies-free lib; Just import our `./default.nix`.
 - Can be used to list other file types, not just `.nix`. See `.initFilter`, `.files` API.
 - Extensible API. import-tree objects are customizable. See `.addAPI`.
+- Useful for implementing the [Dendritic Pattern](https://github.com/mightyiam/dendritic).
 
 ## Quick Usage (with flake-parts)
 
-This example shows how to load all nix files inside `./modules`, following the
-[Dendritic Pattern](https://github.com/mightyiam/dendritic)
+This example shows how to load all nix files inside `./modules`, on [Dendritic](https://vic.github.io/dendrix/Dendritic.html) setups. (see also [flake-file's dendritic template](https://github.com/vic/flake-file?tab=readme-ov-file#flakemodulesdendritic))
 
 ```nix
 {
