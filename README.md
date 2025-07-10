@@ -22,9 +22,9 @@ Import all nix files inside `./modules` in your flake:
 
 🌳 Works with NixOS, nix-darwin, home-manager, flake-parts, NixVim, etc.\
 🌲 Callable as a deps-free Flake or nix lib.\
-🌴 API for listing custom file types with filters and transformations.\
-🌵 Extensible: add your own API methods to tailor import-tree objects.\
-🎄 No dependencies outside flakes: just `import ./default.nix`.\
+🌴 Sensible defaults and configurable behaviour.\
+🌵 API for listing custom file types with filters and transformations.\
+🎄 Extensible: add your own API methods to tailor import-tree objects.\
 🌿 Useful on [Dendritic Pattern](https://github.com/mightyiam/dendritic) setups.\
 🌱 [Growing](https://github.com/search?q=language%3ANix+import-tree&type=code) [community](https://vic.github.io/dendrix/Dendrix-Trees.html) [adoption](https://github.com/vic/flake-file)
 
@@ -126,7 +126,7 @@ Or, in a simpler but less readable way:
 ((import-tree.map lib.traceVal).filter (lib.hasInfix ".mod.")) ./modules
 ```
 
-##### `import-tree.filter` and `import-tree.filterNot`
+##### 🌲 `import-tree.filter` and `import-tree.filterNot`
 
 `filter` takes a predicate function `path -> bool`. Only files with suffix `.nix` are candidates.
 
@@ -136,7 +136,7 @@ import-tree.filter (lib.hasInfix ".mod.") ./some-dir
 
 Multiple filters can be combined, results must match all of them.
 
-##### `import-tree.match` and `import-tree.matchNot`
+##### 🌳 `import-tree.match` and `import-tree.matchNot`
 
 `match` takes a regular expression. The regex should match the full path for the path to be selected. Matching is done with `builtins.match`.
 
@@ -146,7 +146,7 @@ import-tree.match ".*/[a-z]+@(foo|bar)\.nix" ./some-dir
 
 Multiple match filters can be added, results must match all of them.
 
-##### `import-tree.map`
+##### 🌴 `import-tree.map`
 
 `map` can be used to transform each path by providing a function.
 
@@ -166,7 +166,7 @@ lib.pipe import-tree [
 # => list of contents of all files.
 ```
 
-##### `import-tree.addPath`
+##### 🌵 `import-tree.addPath`
 
 `addPath` can be used to prepend paths to be filtered as a setup for import-tree.
 
@@ -175,7 +175,7 @@ lib.pipe import-tree [
 import-tree [./vendor ./modules]
 ```
 
-##### `import-tree.addAPI`
+##### 🎄 `import-tree.addAPI`
 
 `addAPI` extends the current import-tree object with new methods.
 
@@ -187,7 +187,7 @@ import-tree.addAPI {
 }
 ```
 
-##### `import-tree.withLib`
+##### 🌿 `import-tree.withLib`
 
 `withLib` is required prior to invocation of any of `.leafs` or `.pipeTo` when not used as part of a nix modules evaluation.
 
@@ -195,7 +195,7 @@ import-tree.addAPI {
 import-tree.withLib pkgs.lib
 ```
 
-##### `import-tree.pipeTo`
+##### 🌱 `import-tree.pipeTo`
 
 `pipeTo` takes a function that will receive the list of paths.
 
@@ -203,7 +203,7 @@ import-tree.withLib pkgs.lib
 import-tree.pipeTo lib.id # equivalent to  `.leafs`
 ```
 
-##### `import-tree.leafs`
+##### 🍃 `import-tree.leafs`
 
 `leafs` takes no arguments, it is equivalent to calling `import-tree.pipeTo lib.id`.
 
@@ -211,11 +211,11 @@ import-tree.pipeTo lib.id # equivalent to  `.leafs`
 import-tree.leafs
 ```
 
-##### `import-tree.new`
+##### 🌲 `import-tree.new`
 
 Returns a fresh import-tree with empty state.
 
-##### `import-tree.initFilter`
+##### 🌳 `import-tree.initFilter`
 
 *Replaces* the initial filter which defaults to: Include files with `.nix` suffix and not having `/_` infix.
 
@@ -224,7 +224,7 @@ import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/ignored/" p
 import-tree.initFilter (lib.hasSuffix ".md")
 ```
 
-##### `import-tree.files`
+##### 🌴 `import-tree.files`
 
 A shorthand for `import-tree.leafs.result`. Returns a list of matching files.
 
@@ -237,7 +237,7 @@ lib.pipe import-tree [
 ]
 ```
 
-##### `import-tree.result`
+##### 🌵 `import-tree.result`
 
 Exactly the same as calling the import-tree object with an empty list `[ ]`.
 
@@ -262,17 +262,12 @@ to learn about the Dendritic pattern advantages.
 
 ### Sharing pre-configured subtrees of modules
 
-<details>
-<summary>
-
 Since the import-tree API is _extensible_ and lets you add paths or
 filters at configuration time, configuration-library authors can
 provide custom import-tree instances with an API suited for their
 particular idioms.
 
 @vic is using this on [Dendrix](https://github.com/vic/dendrix) for [community conventions](https://github.com/vic/dendrix/blob/main/dev/modules/community/_pipeline.nix) on tagging files.
-
-</summary>
 
 This would allow us to have community-driven *sets* of configurations,
 much like those popular for editors: spacemacs/lazy-vim distributions.
