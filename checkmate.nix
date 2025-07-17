@@ -67,7 +67,7 @@ in
         };
 
         match."test `match` composes with `filter`" = {
-          expr = ((lit.match ".*/[^/]+_[^/]+\.nix").filter (lib.hasSuffix "b.nix")).leafs ./tree;
+          expr = ((lit.match ".*a_b.nix").filter (lib.hasInfix "/a/")).leafs ./tree;
           expected = [ ./tree/a/a_b.nix ];
         };
 
