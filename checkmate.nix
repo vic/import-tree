@@ -255,6 +255,11 @@ in
             ./tree/modules/hello-world/mod.nix
           ];
         };
+
+        leafs."test loads from hidden directory but excludes sub-hidden" = {
+          expr = lit.leafs ./tree/a/b/_c;
+          expected = [ ./tree/a/b/_c/d/e.nix ];
+        };
       };
 
     }
