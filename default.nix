@@ -138,25 +138,36 @@ let
 
   callable =
     let
-      __config = {
+      initial = {
         # Accumulated configuration
         api = { };
         mapf = (i: i);
         filterf = _: true;
         paths = [ ];
 
+        # config is our state (initial at first). this functor allows it
+        # to work as if it was a function, taking an update function
+        # that will return a new state. for example:
+        # in mergeAttrs:  `config (c: c // x)` will merge x into new config.
         __functor =
-          self: f:
+          config: update:
           let
-            __config = (f self);
-            boundAPI = builtins.mapAttrs (_: g: g (self f)) __config.api;
-            accAttr = attrName: acc: self (c: mapAttr (f c) attrName acc);
-            mergeAttrs = attrs: self (c: (f c) // attrs);
+            # updated is another config
+            updated = update config;
+
+            # current is the result of this functor.
+            # it is not a config, but an import-tree object containing a __config.
+            current = config update;
+            boundAPI = builtins.mapAttrs (_: g: g current) updated.api;
+
+            # these two helpers are used to **append** aggregated configs.
+            accAttr = attrName: acc: config (c: mapAttr (update c) attrName acc);
+            mergeAttrs = attrs: config (c: (update c) // attrs);
           in
           boundAPI
           // {
-            inherit __config;
-            __functor = functor;
+            __config = updated;
+            __functor = functor; # user-facing callable
 
             # Configuration updates (accumulating)
             filter = filterf: accAttr "filterf" (and filterf);
@@ -174,17 +185,17 @@ let
             leafs = mergeAttrs { pipef = (i: i); };
 
             # Applies empty (for already path-configured trees)
-            result = (self f) [ ];
+            result = current [ ];
 
             # Return a list of all filtered files.
-            files = (self f).leafs.result;
+            files = current.leafs.result;
 
             # returns the original empty state
             new = callable;
           };
       };
     in
-    __config (c: c);
+    initial (config: config);
 
 in
 callable
