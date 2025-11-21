@@ -66,7 +66,7 @@ The following goes recursively through `./modules` and imports all `.nix` files.
 
 For more advanced usage, `import-tree` can be configured via its extensible API.
 
-______________________________________________________________________
+---
 
 #### Obtaining the API
 
@@ -228,7 +228,7 @@ Returns a fresh import-tree with empty state.
 
 ##### 🌳 `import-tree.initFilter`
 
-*Replaces* the initial filter which defaults to: Include files with `.nix` suffix and not having `/_` infix.
+_Replaces_ the initial filter which defaults to: Include files with `.nix` suffix and not having `/_` infix.
 
 ```nix
 import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/ignored/" p)
@@ -257,7 +257,7 @@ Exactly the same as calling the import-tree object with an empty list `[ ]`.
 (import-tree.addPath ./modules) [ ]
 ```
 
-______________________________________________________________________
+---
 
 ## Why
 
@@ -280,7 +280,7 @@ particular idioms.
 
 @vic is using this on [Dendrix](https://github.com/vic/dendrix) for [community conventions](https://github.com/vic/dendrix/blob/main/dev/modules/community/_pipeline.nix) on tagging files.
 
-This would allow us to have community-driven *sets* of configurations,
+This would allow us to have community-driven _sets_ of configurations,
 much like those popular for editors: spacemacs/lazy-vim distributions.
 
 Imagine an editor distribution exposing the following flake output:
@@ -288,7 +288,7 @@ Imagine an editor distribution exposing the following flake output:
 ```nix
 # editor-distro's flakeModule
 {inputs, lib, ...}:
-let 
+let
   flake.lib.modules-tree = lib.pipe inputs.import-tree [
     (i: i.addPath ./modules)
     (i: i.addAPI { inherit on off exclusive; })
@@ -323,7 +323,7 @@ in {
 }
 ```
 
-______________________________________________________________________
+---
 
 ## Testing
 
@@ -332,7 +332,7 @@ ______________________________________________________________________
 The test suite can be found in [`checkmate.nix`](checkmate.nix). To run it locally:
 
 ```sh
-nix flake check path:checkmate --override-input target path:.
+nix flake check github:vic/checkmate --override-input target path:.
 ```
 
 Run the following to format files:
