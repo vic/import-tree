@@ -1,6 +1,6 @@
 when:
-  - event: [ "push" ]
-    branch: [ "*" ]
+  - event: ["push"]
+    branch: ["*"]
 engine: "nixery"
 clone:
   skip: true
@@ -10,4 +10,3 @@ dependencies:
 steps:
   - name: mirror
     command: gh -R vic/vic issue comment 3 -b import-tree
-    
