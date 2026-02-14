@@ -7,7 +7,7 @@
   <img src="https://github.com/vic/import-tree/actions/workflows/test.yml/badge.svg" alt="CI Status"/> </a>
 </p>
 
-> `import-tree` and [vic](https://bsky.app/profile/oeiuwq.bsky.social)'s [dendritic libs](https://vic.github.io/dendrix/Dendritic-Ecosystem.html#vics-dendritic-libraries) made for you with Love++ and AI--. If you like my work, consider [sponsoring](https://github.com/sponsors/vic)
+> `import-tree` and [vic](https://github.com/vic/vix)'s [dendritic libs](https://vic.github.io/dendrix/Dendritic-Ecosystem.html#vics-dendritic-libraries) made for you with Love++ and AI--. If you like my work, consider [sponsoring](https://github.com/sponsors/vic)
 
 # 🌲🌴 import-tree 🎄🌳
 
