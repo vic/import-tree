@@ -1,0 +1,63 @@
+---
+title: Overview
+description: What import-tree does and how it fits into your Nix setup.
+---
+
+import { Card, CardGrid, LinkButton } from '@astrojs/starlight/components';
+
+## What is import-tree?
+
+`import-tree` is a Nix library that recursively discovers files in a directory tree and produces a list of Nix module imports. Instead of manually listing every module in your `imports = [ ... ]`, you point `import-tree` at a directory and it does the rest.
+
+It is a **dependency-free**, **single-file** library that works as a flake or a plain `import`.
+
+## How It Works
+
+Given a directory tree:
+
+```
+modules/
+  networking.nix
+  desktop/
+    sway.nix
+    waybar.nix
+  _helpers/
+    utils.nix
+```
+
+Calling `import-tree ./modules` produces a module whose `imports` contain:
+
+- `./modules/networking.nix`
+- `./modules/desktop/sway.nix`
+- `./modules/desktop/waybar.nix`
+
+The `_helpers/` directory is skipped because paths containing `/_` are ignored by default.
+
+## Key Features
+
+<CardGrid>
+  <Card title="Universal" icon="open-book">
+    Works with NixOS, nix-darwin, home-manager, flake-parts, NixVim — any Nix module system.
+    <LinkButton href="/getting-started/quick-start" variant="minimal" icon="right-arrow">Quick Start</LinkButton>
+  </Card>
+  <Card title="Composable Filters" icon="list-format">
+    Chain `.filter`, `.filterNot`, `.match`, `.matchNot` to select exactly the files you need.
+    <LinkButton href="/guides/filtering" variant="minimal" icon="right-arrow">Filtering Guide</LinkButton>
+  </Card>
+  <Card title="Transformations" icon="random">
+    Use `.map` to transform discovered paths — wrap in modules, read contents, or anything else.
+    <LinkButton href="/guides/mapping" variant="minimal" icon="right-arrow">Mapping Guide</LinkButton>
+  </Card>
+  <Card title="Extensible API" icon="puzzle">
+    Build domain-specific APIs with `.addAPI` — create named presets, feature flags, module sets.
+    <LinkButton href="/guides/custom-api" variant="minimal" icon="right-arrow">Custom API Guide</LinkButton>
+  </Card>
+  <Card title="Non-Module Usage" icon="seti:folder">
+    Use `.leafs` and `.files` outside module evaluation to get raw file lists for any purpose.
+    <LinkButton href="/guides/outside-modules" variant="minimal" icon="right-arrow">Outside Modules</LinkButton>
+  </Card>
+  <Card title="Dendritic Pattern" icon="star">
+    Purpose-built for the Dendritic pattern where every file is a self-contained module.
+    <LinkButton href="/guides/dendritic" variant="minimal" icon="right-arrow">Dendritic Pattern</LinkButton>
+  </Card>
+</CardGrid>

@@ -1,0 +1,50 @@
+---
+title: Transforming Paths
+description: Use .map to transform discovered file paths before they are imported.
+---
+
+## map
+
+`.map` takes a function that transforms each discovered path. Transformations are applied **after** filtering.
+
+### Wrapping in Custom Modules
+
+```nix
+import-tree.map (path: { imports = [ path ]; }) ./modules
+```
+
+### Tracing Discovered Files
+
+```nix
+import-tree.map lib.traceVal ./modules
+```
+
+This prints each discovered path during evaluation — useful for debugging.
+
+### Composing Maps
+
+Multiple `.map` calls compose left-to-right (the first map runs first):
+
+```nix
+lib.pipe import-tree [
+  (i: i.map import)             # import each .nix file
+  (i: i.map builtins.stringLength) # get the length of each result
+  (i: i.withLib lib)
+  (i: i.leafs ./dir)
+]
+```
+
+### Using map Outside Module Evaluation
+
+When used with `.leafs` or `.pipeTo`, `.map` transforms paths into arbitrary values — not just modules:
+
+```nix
+# Read all .md files under a directory
+lib.pipe import-tree [
+  (i: i.initFilter (lib.hasSuffix ".md"))
+  (i: i.map builtins.readFile)
+  (i: i.withLib lib)
+  (i: i.leafs ./docs)
+]
+# => [ "# Title\n..." "# Other\n..." ]
+```

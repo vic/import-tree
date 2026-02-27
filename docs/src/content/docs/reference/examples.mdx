@@ -1,0 +1,119 @@
+---
+title: Examples
+description: Practical examples of import-tree usage patterns.
+---
+
+## flake-parts Module Tree
+
+```nix
+# flake.nix
+{
+  inputs.import-tree.url = "github:vic/import-tree";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; }
+      (inputs.import-tree ./modules);
+}
+```
+
+## NixOS Configuration
+
+```nix
+# configuration.nix
+{ import-tree, ... }: {
+  imports = [ (import-tree ./modules) ];
+}
+```
+
+## Multiple Directories
+
+```nix
+import-tree [ ./base-modules ./host-specific ./shared ]
+```
+
+## Filter by Convention
+
+Only import files tagged with a `+feature` convention:
+
+```nix
+import-tree.filter (lib.hasInfix "+networking") ./modules
+```
+
+## Regex-Based Selection
+
+```nix
+# Only files named like: word_word.nix
+import-tree.match ".*/[a-z]+_[a-z]+\.nix" ./modules
+```
+
+## Pipeline Style
+
+```nix
+lib.pipe import-tree [
+  (i: i.filter (lib.hasInfix "/desktop/"))
+  (i: i.map lib.traceVal)
+  (i: i ./modules)
+]
+```
+
+## Non-Nix File Discovery
+
+```nix
+lib.pipe import-tree [
+  (i: i.initFilter (lib.hasSuffix ".json"))
+  (i: i.map builtins.readFile)
+  (i: i.map builtins.fromJSON)
+  (i: i.withLib lib)
+  (i: i.leafs ./config)
+]
+# => list of parsed JSON objects
+```
+
+## Pre-Configured Tree for a Library
+
+```nix
+let
+  my-tree = lib.pipe import-tree [
+    (i: i.addPath ./modules)
+    (i: i.addAPI {
+      desktop = self: self.filter (lib.hasInfix "/desktop/");
+      server  = self: self.filter (lib.hasInfix "/server/");
+      all     = self: self;
+    })
+  ];
+in {
+  # Use the desktop subset
+  imports = [ my-tree.desktop ];
+
+  # Or import everything
+  # imports = [ my-tree.all ];
+}
+```
+
+## Counting Files
+
+```nix
+(import-tree.withLib lib).pipeTo builtins.length ./modules
+```
+
+## Mixing with Manual Imports
+
+```nix
+{
+  imports = [
+    (import-tree ./auto-modules)   # auto-discovered
+    ./manual/special-case.nix      # manual import
+  ];
+}
+```
+
+## Using with addPath and result
+
+```nix
+let
+  tree = import-tree.addPath ./core;
+  extended = tree.addPath ./extras;
+in
+extended.result
+```

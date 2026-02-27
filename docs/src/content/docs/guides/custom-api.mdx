@@ -1,0 +1,90 @@
+---
+title: Custom API
+description: Extend import-tree with your own methods using .addAPI.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## addAPI
+
+`.addAPI` extends the import-tree object with new named methods. Each method receives the current import-tree instance (`self`) and can call any existing method on it.
+
+```nix
+import-tree.addAPI {
+  helloOption = self: self.addPath ./modules/hello-option;
+  feature = self: infix: self.filter (lib.hasInfix infix);
+  minimal = self: self.feature "minimal";
+}
+```
+
+After calling `.addAPI`, the new methods are available directly on the import-tree object:
+
+```nix
+extended.helloOption.files
+extended.feature "networking" ./modules
+extended.minimal ./src
+```
+
+## Preserving Previous Extensions
+
+Calling `.addAPI` multiple times is cumulative — previous extensions are preserved:
+
+```nix
+let
+  first = import-tree.addAPI { foo = self: self.addPath ./foo; };
+  second = first.addAPI { bar = self: self.addPath ./bar; };
+in
+second.foo.files  # still works
+```
+
+## Late Binding
+
+API methods are late-bound. You can reference methods that don't exist yet — they resolve when actually called:
+
+```nix
+let
+  first = import-tree.addAPI { result = self: self.late; };
+  extended = first.addAPI { late = _self: "hello"; };
+in
+extended.result  # => "hello"
+```
+
+This enables building APIs incrementally across multiple `.addAPI` calls.
+
+## Real-World Example: Module Distribution
+
+<Aside type="tip">
+This pattern enables community-driven module distributions — think editor plugin sets, server presets, or infrastructure templates.
+</Aside>
+
+A library author can ship a pre-configured import-tree with domain-specific methods:
+
+```nix
+# editor-distro flake module
+{ inputs, lib, ... }:
+let
+  on = self: flag: self.filter (lib.hasInfix "+${flag}");
+  off = self: flag: self.filterNot (lib.hasInfix "+${flag}");
+  exclusive = self: onFlag: offFlag: (on self onFlag) |> (s: off s offFlag);
+in {
+  flake.lib.modules-tree = lib.pipe inputs.import-tree [
+    (i: i.addPath ./modules)
+    (i: i.addAPI { inherit on off exclusive; })
+    (i: i.addAPI { ruby = self: self.on "ruby"; })
+    (i: i.addAPI { python = self: self.on "python"; })
+    (i: i.addAPI { old-school = self: self.off "copilot"; })
+    (i: i.addAPI { vim-btw = self: self.exclusive "vim" "emacs"; })
+  ];
+}
+```
+
+Consumers pick exactly the features they want:
+
+```nix
+# consumer flake module
+{ inputs, ... }:
+let ed = inputs.editor-distro.lib.modules-tree;
+in {
+  imports = [ (ed.vim-btw.old-school.on "rust") ];
+}
+```

@@ -1,3 +1,6 @@
 {
-  perSystem.treefmt.settings.global.excludes = [ "checkmate/tree/*" ];
+  perSystem.treefmt.settings.global.excludes = [
+    "checkmate/tree/*"
+    "docs/*"
+  ];
 }
