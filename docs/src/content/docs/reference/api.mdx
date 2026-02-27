@@ -1,0 +1,200 @@
+---
+title: API Reference
+description: Complete reference for every import-tree method.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Obtaining import-tree
+
+**As a flake input:**
+```nix
+inputs.import-tree.url = "github:vic/import-tree";
+# Then use: inputs.import-tree
+```
+
+**As a plain import:**
+```nix
+let import-tree = import ./path-to/import-tree;
+```
+
+The resulting value is a callable attrset — the primary `import-tree` object.
+
+---
+
+## Core: Calling import-tree
+
+### `import-tree <path | [paths]>`
+
+Takes a path or a (nested) list of paths. Returns a Nix module with `imports` set to all discovered files.
+
+```nix
+import-tree ./modules
+import-tree [ ./modules ./extra ]
+import-tree [ ./a [ ./b ] ]   # nested lists are flattened
+```
+
+Other import-tree objects can appear in the list as if they were paths.
+
+<Aside>
+When the argument is an attrset with an `options` attribute, import-tree assumes it is being evaluated as a module. This lets a pre-configured import-tree object appear directly in `imports`.
+</Aside>
+
+Anything with an `outPath` attribute (like flake inputs) is treated as a path:
+
+```nix
+import-tree [ { outPath = ./modules; } ]
+```
+
+Non-path values (like attrsets) are passed through the filter and included if they pass.
+
+---
+
+## Filtering
+
+### `.filter <fn>`
+
+`fn : string -> bool` — only include paths where `fn` returns `true`.
+
+```nix
+import-tree.filter (lib.hasInfix ".mod.") ./modules
+```
+
+Multiple `.filter` calls compose with AND.
+
+### `.filterNot <fn>`
+
+Inverse of `.filter` — exclude paths where `fn` returns `true`.
+
+```nix
+import-tree.filterNot (lib.hasInfix "experimental") ./modules
+```
+
+### `.match <regex>`
+
+Include only paths matching the regex. Uses `builtins.match` (tests full string).
+
+```nix
+import-tree.match ".*/[a-z]+_[a-z]+\.nix" ./modules
+```
+
+Multiple `.match` calls compose with AND.
+
+### `.matchNot <regex>`
+
+Exclude paths matching the regex.
+
+```nix
+import-tree.matchNot ".*/test_.*\.nix" ./modules
+```
+
+### `.initFilter <fn>`
+
+**Replaces** the default filter (`.nix` suffix, no `/_` infix). Use for non-Nix files or custom ignore conventions.
+
+```nix
+import-tree.initFilter (lib.hasSuffix ".md") ./docs
+import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/skip/" p)
+```
+
+Also applies to non-path items in import lists.
+
+---
+
+## Transformation
+
+### `.map <fn>`
+
+`fn : path -> a` — transform each discovered path.
+
+```nix
+import-tree.map lib.traceVal ./modules        # trace each path
+import-tree.map (p: { imports = [ p ]; })      # wrap in module
+import-tree.map import                         # actually import
+```
+
+Multiple `.map` calls compose (first map runs first).
+
+---
+
+## Path Accumulation
+
+### `.addPath <path>`
+
+Prepend a path to the internal path list. Can be called multiple times:
+
+```nix
+(import-tree.addPath ./vendor).addPath ./modules
+# discovers files in both directories
+```
+
+---
+
+## Extension
+
+### `.addAPI <attrset>`
+
+Extend the import-tree object with new methods. Each value is a function receiving `self` (the current import-tree):
+
+```nix
+import-tree.addAPI {
+  maximal = self: self.addPath ./all-modules;
+  feature = self: name: self.filter (lib.hasInfix name);
+}
+```
+
+Methods are late-bound — you can reference methods added in later `.addAPI` calls.
+
+---
+
+## Output
+
+### `.withLib <lib>`
+
+Required before `.leafs` or `.pipeTo` when used outside module evaluation. Provides `lib.filesystem.listFilesRecursive`.
+
+```nix
+import-tree.withLib pkgs.lib
+```
+
+### `.leafs`
+
+Returns a configured import-tree that produces file lists instead of modules:
+
+```nix
+(import-tree.withLib lib).leafs ./modules
+# => [ ./modules/a.nix ./modules/b.nix ]
+```
+
+### `.files`
+
+Shorthand for `.leafs.result`:
+
+```nix
+(import-tree.addPath ./modules).withLib lib |>.files
+```
+
+### `.pipeTo <fn>`
+
+Like `.leafs` but pipes the result list through `fn`:
+
+```nix
+(import-tree.withLib lib).pipeTo builtins.length ./modules
+# => 3
+```
+
+### `.result`
+
+Evaluate with an empty path list. Equivalent to calling with `[]`:
+
+```nix
+(import-tree.addPath ./modules).result
+```
+
+### `.new`
+
+Returns a fresh import-tree with empty state — no paths, filters, maps, or API extensions.
+
+```nix
+configured-tree.new  # back to a clean slate
+```

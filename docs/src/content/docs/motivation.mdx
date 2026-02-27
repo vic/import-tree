@@ -1,0 +1,79 @@
+---
+title: Why import-tree?
+description: The motivation behind import-tree and the problems it solves.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## The Problem
+
+As Nix configurations grow, the `imports` list becomes a maintenance burden:
+
+```nix
+# This doesn't scale.
+{
+  imports = [
+    ./modules/networking.nix
+    ./modules/desktop/sway.nix
+    ./modules/desktop/waybar.nix
+    ./modules/services/docker.nix
+    ./modules/services/ssh.nix
+    ./modules/users/alice.nix
+    # ... dozens more
+  ];
+}
+```
+
+Every new file requires updating the import list. Forget one and your config silently ignores it. Reorganize your directory and you must update every path by hand.
+
+## The Solution
+
+```nix
+{
+  imports = [ (import-tree ./modules) ];
+}
+```
+
+Add a file to `./modules/` and it is automatically discovered. Reorganize freely. Use `/_` prefixed directories for helpers that should not be imported.
+
+## Dendritic Pattern
+
+The [Dendritic pattern](https://github.com/mightyiam/dendritic) — where each file is a self-contained module — was the original inspiration for `import-tree`.
+
+<Aside type="tip">
+See [@mightyiam's post](https://discourse.nixos.org/t/pattern-each-file-is-a-flake-parts-module/61271),
+[@drupol's blog](https://not-a-number.io/2025/refactoring-my-infrastructure-as-code-configurations/), and
+[@vic's reply](https://discourse.nixos.org/t/how-do-you-structure-your-nixos-configs/65851/8)
+for more on Dendritic setups.
+</Aside>
+
+With Dendritic, your configuration becomes a file tree — each concern in its own file, each file a module. `import-tree` removes the glue code that would otherwise connect them.
+
+## Beyond Loading Files
+
+`import-tree` is not just a file loader. Its builder API lets you:
+
+- **Filter** which files are selected — by predicate, regex, or both.
+- **Transform** discovered paths — wrap them in custom modules, read their contents, or anything else.
+- **Compose** multiple directory trees with shared filters.
+- **Extend** with domain-specific APIs — let library authors ship curated import-tree instances.
+
+This makes `import-tree` useful for sharing pre-configured sets of modules across projects. Library authors can ship an `import-tree` instance with custom filters and API methods, and consumers pick what they need:
+
+```nix
+# A library could expose:
+lib.modules-tree = import-tree.addAPI {
+  gaming = self: self.filter (lib.hasInfix "+gaming");
+  minimal = self: self.filterNot (lib.hasInfix "+heavy");
+};
+
+# Consumers use it like:
+{ imports = [ lib.modules-tree.gaming.minimal ]; }
+```
+
+## Design Goals
+
+- **Zero dependencies** — a single `default.nix`, no extra flake inputs
+- **Works everywhere** — flakes, non-flakes, any module system
+- **Composable** — builder pattern with filter/map/extend chains
+- **Predictable** — sensible defaults, clear ignore rules, no magic

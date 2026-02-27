@@ -1,0 +1,92 @@
+---
+title: Filtering Files
+description: Control which files import-tree discovers using predicates and regular expressions.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Default Behavior
+
+By default, `import-tree` includes files that:
+
+1. Have the `.nix` suffix
+2. Do **not** have `/_` in their path (underscore-prefixed directories are ignored)
+
+You can narrow this down with filters, or replace the defaults entirely.
+
+## filter / filterNot
+
+`filter` takes a predicate function `string -> bool` applied to each file's path:
+
+```nix
+# Only import files containing ".mod." in their name
+import-tree.filter (lib.hasInfix ".mod.") ./modules
+```
+
+`filterNot` is the inverse — exclude files matching the predicate:
+
+```nix
+# Skip any file with "experimental" in the path
+import-tree.filterNot (lib.hasInfix "experimental") ./modules
+```
+
+### Composing Filters
+
+Multiple filters combine with logical AND — a file must pass **all** of them:
+
+```nix
+lib.pipe import-tree [
+  (i: i.filter (lib.hasInfix "/desktop/"))
+  (i: i.filter (lib.hasSuffix "bar.nix"))
+  (i: i ./modules)
+]
+```
+
+This selects only files under a `desktop/` directory whose name ends in `bar.nix`.
+
+## match / matchNot
+
+`match` takes a regular expression. The regex is tested against the **full path** using `builtins.match`:
+
+```nix
+# Only files named like "word_word.nix"
+import-tree.match ".*/[a-z]+_[a-z]+\.nix" ./modules
+```
+
+`matchNot` excludes files matching the regex:
+
+```nix
+# Skip files with numeric names
+import-tree.matchNot ".*/[0-9]+\.nix" ./modules
+```
+
+<Aside type="caution">
+`builtins.match` tests the **entire** string. Your regex must match the full path, not just a substring. Use `.*` to match surrounding parts.
+</Aside>
+
+### Mixing filter and match
+
+All filter types compose together:
+
+```nix
+(import-tree.match ".*_.*\.nix").filter (lib.hasInfix "/src/") ./tree
+```
+
+This finds files matching the regex **and** containing `/src/` in their path.
+
+## initFilter — Replacing Defaults
+
+`initFilter` **replaces** the built-in `.nix` + no-`/_` filter entirely. Use it to discover non-Nix files or change the ignore convention:
+
+```nix
+# Find .txt files instead of .nix files
+import-tree.initFilter (lib.hasSuffix ".txt") ./dir
+
+# Find .nix files but use /ignored/ instead of /_
+import-tree.initFilter (p: lib.hasSuffix ".nix" p && !lib.hasInfix "/ignored/" p)
+```
+
+<Aside>
+`initFilter` also applies to non-path items (like attrsets) passed directly in import lists.
+This lets you filter out module attrsets programmatically.
+</Aside>

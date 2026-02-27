@@ -1,0 +1,107 @@
+---
+title: Quick Start
+description: Get up and running with import-tree in minutes.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Installation
+
+<Tabs>
+<TabItem label="Flake">
+
+Add `import-tree` to your flake inputs:
+
+```nix
+{
+  inputs.import-tree.url = "github:vic/import-tree";
+}
+```
+
+</TabItem>
+<TabItem label="No Flake">
+
+Import directly from a pinned source:
+
+```nix
+let
+  import-tree = import (builtins.fetchTarball {
+    url = "https://github.com/vic/import-tree/archive/main.tar.gz";
+  });
+in
+# use import-tree
+```
+
+Or from a local checkout:
+
+```nix
+let import-tree = import ./path-to/import-tree;
+in
+# use import-tree
+```
+
+</TabItem>
+</Tabs>
+
+## Basic Usage
+
+### With flake-parts
+
+The most common pattern — import all modules from a directory as flake-parts modules:
+
+```nix
+{
+  inputs.import-tree.url = "github:vic/import-tree";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; }
+    (inputs.import-tree ./modules);
+}
+```
+
+### With NixOS / nix-darwin / home-manager
+
+Use `import-tree` anywhere you have an `imports` list:
+
+```nix
+{ config, ... }: {
+  imports = [ (import-tree ./modules) ];
+}
+```
+
+This recursively discovers all `.nix` files under `./modules` and imports them.
+
+### What Gets Imported?
+
+Given this tree:
+
+```
+modules/
+  networking.nix
+  desktop/
+    sway.nix
+  _private/
+    helper.nix
+```
+
+`import-tree ./modules` imports `networking.nix` and `desktop/sway.nix`. The `_private/` directory is skipped because paths with `/_` are ignored by default.
+
+<Aside type="tip">
+Use `/_` prefixed directories for helper files, library code, or anything you don't want auto-imported.
+</Aside>
+
+## Multiple Directories
+
+Pass a list to import from several directories:
+
+```nix
+{ imports = [ (import-tree [ ./modules ./extra-modules ]) ]; }
+```
+
+Lists can be arbitrarily nested — they are flattened automatically.
+
+## Next Steps
+
+- [Filtering](/guides/filtering/) — select specific files by predicate or regex
+- [API Reference](/reference/api/) — complete method documentation
+- [Dendritic Pattern](/guides/dendritic/) — learn the file-per-module approach

@@ -1,0 +1,60 @@
+---
+title: import-tree
+description: Recursively import Nix modules from a directory tree, with a simple, extensible API.
+template: splash
+hero:
+  tagline: Recursively import Nix modules from a directory tree
+  image:
+    html: |
+      <span style="font-size: 8rem">🌲</span>
+  actions:
+    - text: Getting Started
+      link: /getting-started/quick-start/
+      icon: right-arrow
+    - text: API Reference
+      link: /reference/api/
+      variant: minimal
+    - text: Why import-tree?
+      link: /motivation/
+      variant: minimal
+    - text: Source Code
+      link: https://github.com/vic/import-tree
+      icon: github
+      variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+`import-tree` recursively discovers and imports Nix files from a directory tree. It works with **NixOS**, **nix-darwin**, **home-manager**, **flake-parts**, **NixVim**, and any Nix module system.
+
+## At a Glance
+
+```nix
+# In your flake.nix — import every .nix file under ./modules
+{
+  inputs.import-tree.url = "github:vic/import-tree";
+  inputs.flake-parts.url = "github:hercules-ci/flake-parts";
+
+  outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; }
+    (inputs.import-tree ./modules);
+}
+```
+
+Paths containing `/_` are ignored by default — use underscored directories for private helpers.
+
+## Highlights
+
+<CardGrid>
+  <Card title="Zero Dependencies" icon="rocket">
+    A single `default.nix`. Usable as a flake or plain import. No extra inputs needed.
+  </Card>
+  <Card title="Sensible Defaults" icon="approve-check-circle">
+    Recursively finds `.nix` files, skips `/_` prefixed paths. Works out of the box.
+  </Card>
+  <Card title="Builder API" icon="setting">
+    Chain `.filter`, `.match`, `.map`, `.addPath`, and more to customize discovery.
+  </Card>
+  <Card title="Extensible" icon="puzzle">
+    Add your own API methods with `.addAPI` to create domain-specific import-tree instances.
+  </Card>
+</CardGrid>
