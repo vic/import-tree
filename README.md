@@ -13,10 +13,22 @@
 
 > Recursively import [Nix modules](https://nix.dev/tutorials/module-system/) from a directory, with a simple, extensible API.
 
+## Features
+
+🌳 Works with NixOS, nix-darwin, home-manager, flake-parts, NixVim, etc.\
+🌲 Callable as a deps-free Flake or nix lib.\
+🌴 Sensible defaults and configurable behaviour.\
+🌵 Chain `.filter`, `.match`, `.map` for precise file selection.\
+🎄 Extensible: `.addAPI` to create domain-specific instances.\
+🌿 Built to enable the [Dendritic Pattern](https://github.com/mightyiam/dendritic) on both stable/unstable Nix.\
+🌱 [Growing](https://github.com/search?q=language%3ANix+import-tree&type=code) [community](https://vic.github.io/dendrix/Dendrix-Trees.html) [adoption](https://github.com/vic/flake-file)
+
 ## Quick Start
 
 The following examples show how to import all module files.
 By default, paths having `/_` are ignored. See API documentation for advanced usage.
+
+> Related projects: [vic/flake-file](https://github.com/vic/flake-file), [vic/with-inputs](https://github.com/vic/with-inputs)
 
 ### Dendritic flake-parts
 
@@ -47,7 +59,7 @@ By default, paths having `/_` are ignored. See API documentation for advanced us
 }
 ```
 
-### Dendritic non-flake
+### Dendritic Nix (non-flakes, stable Nix)
 
 This example uses [with-inputs](https://github.com/vic/with-inputs) to provide flake-file inputs from [npins](https://github.com/andir/npins) sources.
 
@@ -64,17 +76,6 @@ let
 in
 with-inputs sources {} outputs
 ```
-
-
-## Features
-
-🌳 Works with NixOS, nix-darwin, home-manager, flake-parts, NixVim, etc.\
-🌲 Callable as a deps-free Flake or nix lib.\
-🌴 Sensible defaults and configurable behaviour.\
-🌵 Chain `.filter`, `.match`, `.map` for precise file selection.\
-🎄 Extensible: `.addAPI` to create domain-specific instances.\
-🌿 Built for the [Dendritic Pattern](https://github.com/mightyiam/dendritic).\
-🌱 [Growing](https://github.com/search?q=language%3ANix+import-tree&type=code) [community](https://vic.github.io/dendrix/Dendrix-Trees.html) [adoption](https://github.com/vic/flake-file)
 
 ## Documentation
 
