@@ -13,9 +13,15 @@
 
 > Recursively import [Nix modules](https://nix.dev/tutorials/module-system/) from a directory, with a simple, extensible API.
 
-## Quick Start (flake-parts)
+## Quick Start
+
+The following examples show how to import all module files.
+By default, paths having `/_` are ignored. See API documentation for advanced usage.
+
+### Dendritic flake-parts
 
 ```nix
+# flake.nix
 {
   inputs.import-tree.url = "github:vic/import-tree";
   inputs.flake-parts.url = "github:hercules-ci/flake-parts";
@@ -25,7 +31,40 @@
 }
 ```
 
-By default, paths having `/_` are ignored.
+### Dendritic flake without flake-parts
+
+```nix
+# flake.nix
+{
+  inputs.import-tree.url = "github:vic/import-tree";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+
+  outputs = inputs:
+   (inputs.nixpkgs.lib.evalModules {
+      specialArgs.inputs = inputs;
+      modules = [ (inputs.import-tree ./modules)  ];
+   }).config;
+}
+```
+
+### Dendritic non-flake
+
+This example uses [with-inputs](https://github.com/vic/with-inputs) to provide flake-file inputs from [npins](https://github.com/andir/npins) sources.
+
+```nix
+# default.nix
+let
+  sources = import ./npins;
+  with-inputs = import sources.with-inputs;
+  outputs = inputs:
+   (inputs.nixpkgs.lib.evalModules {
+      specialArgs.inputs = inputs;
+      modules = [ (inputs.import-tree ./modules)  ];
+   }).config;
+in
+with-inputs sources {} outputs
+```
+
 
 ## Features
 
