@@ -67,14 +67,14 @@ This example uses [with-inputs](https://github.com/vic/with-inputs) to provide f
 # default.nix
 let
   sources = import ./npins;
-  with-inputs = import sources.with-inputs;
+  with-inputs = import sources.with-inputs sources {};
   outputs = inputs:
    (inputs.nixpkgs.lib.evalModules {
       specialArgs.inputs = inputs;
       modules = [ (inputs.import-tree ./modules)  ];
    }).config;
 in
-with-inputs sources {} outputs
+with-inputs outputs
 ```
 
 ## Documentation
